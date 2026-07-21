@@ -4,10 +4,10 @@ Panel de monitoreo del Servicio Python — lee estado desde PostgreSQL (stateles
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
-from infrastructure.database import JobRepository
+from infrastructure.dependencies import get_job_repository
 
 router = APIRouter()
-job_repository = JobRepository()
+job_repository = get_job_repository()
 
 STEPS = [
     "En espera de solicitudes del Frontend",

@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Primary;
  * Capa de Infraestructura — Configuración del bus PostgreSQL.
  *
  * Variable externa Render: DATABASE_URL
- * Usado por: infrastructure/persistence/JobRepository.java (Spring Data JPA → JDBC)
+ * Usado por: infrastructure/persistence/JpaJobRepositoryAdapter.java
  */
 @Configuration
 public class DatabaseConfig {

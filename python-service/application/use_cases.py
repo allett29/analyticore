@@ -1,35 +1,27 @@
 """
-Capa de Aplicación — Casos de uso que orquestan el flujo de negocio.
-
-Flujo POST /api/jobs:
-  1. Persistir job en PostgreSQL con estado PENDIENTE
-  2. Llamada REST síncrona a Java para iniciar el análisis (Java pasa a PROCESANDO)
-  3. Devolver jobId al frontend (estado leído desde PostgreSQL)
+Capa de Aplicación — Casos de uso (dependen solo de puertos del dominio).
 """
 from uuid import UUID, uuid4
 
 from domain.models import Job, JobStatus
-from infrastructure.database import JobRepository
-from infrastructure.java_client import JavaAnalysisClient
+from domain.ports.analysis_client_port import AnalysisClientPort
+from domain.ports.job_repository_port import JobRepositoryPort
 
 
 class SubmitTextUseCase:
-    def __init__(self, repository: JobRepository, java_client: JavaAnalysisClient):
+    def __init__(self, repository: JobRepositoryPort, analysis_client: AnalysisClientPort):
         self.repository = repository
-        self.java_client = java_client
+        self.analysis_client = analysis_client
 
     def execute(self, text: str) -> Job:
         job = Job(id=uuid4(), text=text, status=JobStatus.PENDIENTE)
         self.repository.save(job)
-
-        # REST síncrono: notifica a Java que el trabajo está listo
-        self.java_client.trigger_analysis(job.id)
-
+        self.analysis_client.trigger_analysis(job.id)
         return self.repository.find_by_id(job.id) or job
 
 
 class GetJobStatusUseCase:
-    def __init__(self, repository: JobRepository):
+    def __init__(self, repository: JobRepositoryPort):
         self.repository = repository
 
     def execute(self, job_id: UUID) -> Job | None:

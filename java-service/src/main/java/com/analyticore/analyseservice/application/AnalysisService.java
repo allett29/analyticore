@@ -2,7 +2,7 @@ package com.analyticore.analyseservice.application;
 
 import com.analyticore.analyseservice.domain.Job;
 import com.analyticore.analyseservice.domain.JobStatus;
-import com.analyticore.analyseservice.infrastructure.persistence.JobRepository;
+import com.analyticore.analyseservice.domain.port.JobRepositoryPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AnalysisService {
 
-    private final JobRepository jobRepository;
+    private final JobRepositoryPort jobRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final Set<String> POSITIVE_WORDS = Set.of(
@@ -38,7 +38,7 @@ public class AnalysisService {
             "me", "te", "lo", "le", "al", "como", "muy", "mas", "pero", "si", "no"
     );
 
-    public AnalysisService(JobRepository jobRepository) {
+    public AnalysisService(JobRepositoryPort jobRepository) {
         this.jobRepository = jobRepository;
     }
 

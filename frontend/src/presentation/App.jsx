@@ -6,8 +6,9 @@
  *   2. Polling GET /api/jobs/{jobId} hasta estado COMPLETADO
  */
 import { useMemo, useState } from 'react'
-import { getJobStatus, submitText } from '../application/api'
+import { getJobStatusUseCase, submitTextUseCase } from '../application/jobUseCases'
 import { JobStatus, POLL_INTERVAL_MS } from '../domain/jobStatus'
+import { pythonJobGateway } from '../infrastructure/http/pythonJobGateway'
 import FrontendMonitor from './components/FrontendMonitor'
 import ResultsPanel from './components/ResultsPanel'
 import TextAnalyzer from './components/TextAnalyzer'
@@ -33,7 +34,7 @@ export default function App() {
 
   const pollUntilComplete = async (id) => {
     const check = async () => {
-      const job = await getJobStatus(id)
+      const job = await getJobStatusUseCase(pythonJobGateway, id)
       setStatus(job.status)
 
       if (job.status === JobStatus.COMPLETADO) {
@@ -70,7 +71,7 @@ export default function App() {
     setJobId(null)
 
     try {
-      const response = await submitText(text)
+      const response = await submitTextUseCase(pythonJobGateway, text)
       setJobId(response.jobId)
       setStatus(response.status)
       await pollUntilComplete(response.jobId)

@@ -1,60 +1,75 @@
 # Diagrama de Capas — Python Service (FastAPI)
 
-Arquitectura limpia del Servicio de Submisión.
+Arquitectura limpia con **inversión de dependencias**: la aplicación depende de puertos (interfaces) definidos en el dominio; la infraestructura los implementa.
 
 ```mermaid
 graph TB
     subgraph Presentación
-        ROUTES[presentation/routes.py<br/>Endpoints REST]
-        MAIN[presentation/main.py<br/>App FastAPI + CORS]
-        DASH[presentation/dashboard.py<br/>Panel demo]
+        ROUTES[presentation/routes.py]
+        MAIN[presentation/main.py]
+        DASH[presentation/dashboard.py]
+        DEPS[infrastructure/dependencies.py<br/>Composition root]
     end
 
     subgraph Aplicación
-        UC_SUB[application/use_cases.py<br/>SubmitTextUseCase]
-        UC_GET[application/use_cases.py<br/>GetJobStatusUseCase]
+        UC_SUB[SubmitTextUseCase]
+        UC_GET[GetJobStatusUseCase]
     end
 
     subgraph Dominio
         MODELS[domain/models.py<br/>Job, JobStatus]
+        PORT_REPO[domain/ports/job_repository_port.py<br/>JobRepositoryPort]
+        PORT_JAVA[domain/ports/analysis_client_port.py<br/>AnalysisClientPort]
     end
 
     subgraph Infraestructura
-        DB[infrastructure/database.py<br/>SQLAlchemy + PostgreSQL]
-        JAVA[infrastructure/java_client.py<br/>Cliente HTTP → Java]
-        CFG[infrastructure/config.py<br/>Variables de entorno]
+        DB[infrastructure/database.py<br/>SqlAlchemyJobRepository]
+        JAVA[infrastructure/java_client.py<br/>HttpJavaAnalysisClient]
+        CFG[infrastructure/config.py]
     end
 
     subgraph Externo
         PG[(PostgreSQL)]
-        JV[Servicio Java<br/>POST /api/analyze]
+        JV[Servicio Java]
     end
 
     MAIN --> ROUTES
     MAIN --> DASH
+    DEPS --> DB
+    DEPS --> JAVA
+    ROUTES --> DEPS
     ROUTES --> UC_SUB
     ROUTES --> UC_GET
+    DASH --> DEPS
     UC_SUB --> MODELS
     UC_GET --> MODELS
-    UC_SUB --> DB
-    UC_SUB --> JAVA
-    UC_GET --> DB
+    UC_SUB --> PORT_REPO
+    UC_SUB --> PORT_JAVA
+    UC_GET --> PORT_REPO
+    DB -.->|implementa| PORT_REPO
+    JAVA -.->|implementa| PORT_JAVA
     DB --> PG
     JAVA -->|REST| JV
     CFG --> DB
     CFG --> JAVA
-    DASH --> DB
 ```
 
-## Capas y archivos
+## Regla de dependencia
+
+| Capa | Depende de | No depende de |
+|---|---|---|
+| **Presentación** | Aplicación, Dominio, Infraestructura (solo wiring) | — |
+| **Aplicación** | Dominio (modelos + **puertos**) | Infraestructura concreta |
+| **Dominio** | Nada externo | Aplicación, Infraestructura |
+| **Infraestructura** | Dominio (puertos + modelos) | Aplicación |
+
+## Archivos clave
 
 | Capa | Archivo | Responsabilidad |
 |---|---|---|
-| **Presentación** | `presentation/routes.py` | `POST /api/jobs`, `GET /api/jobs/{id}` |
-| **Presentación** | `presentation/main.py` | Configuración FastAPI, CORS, health |
-| **Presentación** | `presentation/dashboard.py` | Panel visual de demo |
-| **Aplicación** | `application/use_cases.py` | Lógica de negocio y orquestación |
-| **Dominio** | `domain/models.py` | Entidad Job y enum JobStatus |
-| **Infraestructura** | `infrastructure/database.py` | Persistencia en PostgreSQL |
-| **Infraestructura** | `infrastructure/java_client.py` | Llamada REST al servicio Java |
-| **Infraestructura** | `infrastructure/config.py` | `DATABASE_URL`, `JAVA_SERVICE_URL` |
+| **Dominio** | `domain/ports/job_repository_port.py` | Puerto de persistencia |
+| **Dominio** | `domain/ports/analysis_client_port.py` | Puerto hacia Java |
+| **Aplicación** | `application/use_cases.py` | Orquestación vía puertos |
+| **Infraestructura** | `infrastructure/database.py` | Adaptador SQLAlchemy |
+| **Infraestructura** | `infrastructure/java_client.py` | Adaptador HTTP |
+| **Infraestructura** | `infrastructure/dependencies.py` | Inyección de adaptadores |

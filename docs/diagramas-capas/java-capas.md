@@ -1,58 +1,69 @@
 # Diagrama de Capas — Java Service (Spring Boot)
 
-Arquitectura limpia del Servicio de Análisis (Worker).
+Arquitectura limpia con **inversión de dependencias**: `AnalysisService` depende de `JobRepositoryPort`, no de JPA.
 
 ```mermaid
 graph TB
     subgraph Presentación
-        CTRL[presentation/AnalysisController<br/>POST /api/analyze/{jobId}]
-        DASH[presentation/DashboardController<br/>Panel demo]
+        CTRL[presentation/AnalysisController]
+        DASH[presentation/DashboardController]
     end
 
     subgraph Aplicación
-        SVC[application/AnalysisService<br/>Análisis sentimiento + keywords]
-        DSVC[application/DashboardService<br/>Estado panel demo]
+        SVC[application/AnalysisService]
+        WORKER[application/AnalysisWorker]
+        DSVC[application/DashboardService]
     end
 
     subgraph Dominio
-        JOB[domain/Job.java<br/>Entidad pura]
-        STATUS[domain/JobStatus.java<br/>PENDIENTE/PROCESANDO/COMPLETADO]
+        JOB[domain/Job.java]
+        STATUS[domain/JobStatus.java]
+        PORT[domain/port/JobRepositoryPort.java<br/>interfaz]
     end
 
     subgraph Infraestructura
-        ENTITY[infrastructure/persistence/JobEntity.java<br/>Mapeo JPA]
-        REPO[infrastructure/persistence/JobRepository.java<br/>Adaptador PostgreSQL]
-        MAPPER[infrastructure/persistence/JobMapper.java<br/>Dominio ↔ JPA]
-        DBCFG[infrastructure/config/DatabaseConfig<br/>Conexión PostgreSQL]
+        ADAPTER[infrastructure/persistence/JpaJobRepositoryAdapter<br/>implementa puerto]
+        ENTITY[infrastructure/persistence/JobEntity.java]
+        MAPPER[infrastructure/persistence/JobMapper.java]
+        JPA[infrastructure/persistence/JpaJobRepository.java]
+        DBCFG[infrastructure/config/DatabaseConfig]
     end
 
     subgraph Externo
         PG[(PostgreSQL)]
-        PY[Servicio Python<br/>Notifica nuevo job]
+        PY[Servicio Python]
     end
 
     PY -->|REST POST| CTRL
     CTRL --> SVC
+    CTRL --> WORKER
     DASH --> DSVC
-    DSVC --> REPO
     SVC --> JOB
     SVC --> STATUS
-    SVC --> REPO
-    REPO --> MAPPER
-    REPO --> ENTITY
+    SVC --> PORT
+    DSVC --> PORT
+    WORKER --> SVC
+    ADAPTER -.->|implementa| PORT
+    ADAPTER --> JPA
+    ADAPTER --> MAPPER
+    ADAPTER --> ENTITY
     ENTITY --> PG
-    DBCFG --> REPO
+    DBCFG --> JPA
 ```
 
-## Capas y archivos
+## Regla de dependencia
+
+| Capa | Depende de | No depende de |
+|---|---|---|
+| **Presentación** | Aplicación | Infraestructura concreta |
+| **Aplicación** | Dominio (modelos + **JobRepositoryPort**) | JPA, JDBC, PostgreSQL |
+| **Dominio** | Nada externo | Spring, JPA |
+| **Infraestructura** | Dominio (puerto + modelos) | Aplicación |
+
+## Archivos clave
 
 | Capa | Archivo | Responsabilidad |
 |---|---|---|
-| **Presentación** | `presentation/AnalysisController.java` | Endpoint REST interno |
-| **Presentación** | `presentation/DashboardController.java` | Panel visual de demo |
-| **Aplicación** | `application/AnalysisService.java` | Análisis de sentimiento y keywords |
-| **Dominio** | `domain/Job.java` | Entidad de dominio (sin JPA) |
-| **Dominio** | `domain/JobStatus.java` | Estados del ciclo de vida |
-| **Infraestructura** | `infrastructure/persistence/JobEntity.java` | Entidad JPA |
-| **Infraestructura** | `infrastructure/persistence/JobRepository.java` | Acceso a PostgreSQL |
-| **Infraestructura** | `infrastructure/config/DatabaseConfig.java` | Configuración externa de BD |
+| **Dominio** | `domain/port/JobRepositoryPort.java` | Puerto de persistencia |
+| **Aplicación** | `application/AnalysisService.java` | Lógica de análisis vía puerto |
+| **Infraestructura** | `infrastructure/persistence/JpaJobRepositoryAdapter.java` | Adaptador JPA |

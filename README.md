@@ -25,10 +25,13 @@ src/
 │   ├── App.jsx
 │   ├── index.css
 │   └── components/
-├── application/           # Casos de uso del cliente (REST)
-│   └── api.js
-└── domain/                # Constantes de negocio
-    └── jobStatus.js
+├── application/           # Casos de uso (dependen de puertos)
+│   └── jobUseCases.js
+├── domain/                # Constantes y puertos (interfaces)
+│   ├── jobStatus.js
+│   └── ports/jobGatewayPort.js
+└── infrastructure/        # Adaptadores concretos (fetch, Nginx en raíz)
+    └── http/pythonJobGateway.js
 ```
 
 **Python** — expande `python-service/`:
@@ -41,11 +44,15 @@ python-service/
 │   └── dashboard.py
 ├── application/           # Casos de uso
 │   └── use_cases.py
-├── domain/                # Entidades puras
-│   └── models.py
-└── infrastructure/        # PostgreSQL, cliente Java, config
-    ├── database.py
-    ├── java_client.py
+├── domain/                # Entidades y puertos (interfaces)
+│   ├── models.py
+│   └── ports/
+│       ├── job_repository_port.py
+│       └── analysis_client_port.py
+└── infrastructure/        # Adaptadores concretos
+    ├── database.py        # SqlAlchemyJobRepository
+    ├── java_client.py     # HttpJavaAnalysisClient
+    ├── dependencies.py    # Composition root
     └── config.py
 ```
 
@@ -60,12 +67,13 @@ analyseservice/
 │   ├── AnalysisService.java
 │   ├── AnalysisWorker.java
 │   └── DashboardService.java
-├── domain/                # Modelo de dominio (sin JPA)
+├── domain/                # Modelo y puertos
 │   ├── Job.java
-│   └── JobStatus.java
-└── infrastructure/        # Persistencia y configuración
+│   ├── JobStatus.java
+│   └── port/JobRepositoryPort.java
+└── infrastructure/        # Adaptadores JPA y config
     ├── config/
-    └── persistence/
+    └── persistence/       # JpaJobRepositoryAdapter, JobEntity...
 ```
 
 ## Flujo de datos

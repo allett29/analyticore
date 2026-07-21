@@ -7,7 +7,7 @@ import java.util.UUID;
  * Capa de Dominio — Entidad Job pura (sin anotaciones JPA).
  *
  * Tabla compartida: PostgreSQL 'jobs' (database/schema.sql)
- * Persistencia: infrastructure/persistence/JobEntity.java + JobRepository.java
+ * Persistencia: infrastructure/persistence/JpaJobRepositoryAdapter.java
  */
 public class Job {
 

@@ -1,32 +1,34 @@
 # Diagrama de Capas — Frontend (React + Nginx)
 
-Arquitectura limpia del componente Frontend.
+Arquitectura limpia con **inversión de dependencias**: los casos de uso dependen de `JobGatewayPort`, no de `fetch`.
 
 ```mermaid
 graph TB
     subgraph Presentación
-        MAIN[presentation/main.jsx<br/>Punto de entrada]
-        APP[presentation/App.jsx<br/>Orquestador y polling]
-        TA[presentation/components/TextAnalyzer.jsx<br/>Formulario]
-        RP[presentation/components/ResultsPanel.jsx<br/>Resultados]
-        FM[presentation/components/FrontendMonitor.jsx<br/>Panel demo]
-    end
-
-    subgraph Dominio
-        DOM[domain/jobStatus.js<br/>Estados y constantes]
+        MAIN[presentation/main.jsx]
+        APP[presentation/App.jsx<br/>composition root]
+        TA[presentation/components/TextAnalyzer.jsx]
+        RP[presentation/components/ResultsPanel.jsx]
+        FM[presentation/components/FrontendMonitor.jsx]
     end
 
     subgraph Aplicación
-        API[application/api.js<br/>Cliente REST HTTP]
+        UC[application/jobUseCases.js<br/>submitText / getJobStatus]
+    end
+
+    subgraph Dominio
+        DOM[domain/jobStatus.js]
+        PORT[domain/ports/jobGatewayPort.js<br/>interfaz]
     end
 
     subgraph Infraestructura
-        NG[Nginx<br/>Servidor web de producción]
-        VITE[Vite Build<br/>Compilación estática]
+        GW[infrastructure/http/pythonJobGateway.js<br/>implementa puerto]
+        NG[Nginx]
+        VITE[Vite Build]
     end
 
     subgraph Externo
-        PY[Servicio Python<br/>POST/GET /api/jobs]
+        PY[Servicio Python]
     end
 
     MAIN --> APP
@@ -34,21 +36,29 @@ graph TB
     APP --> RP
     APP --> FM
     APP --> DOM
-    APP --> API
-    API -->|REST JSON| PY
+    APP --> UC
+    APP --> GW
+    UC --> PORT
+    GW -.->|implementa| PORT
+    GW -->|REST JSON| PY
     VITE -->|dist/| NG
-    NG -->|Sirve SPA| MAIN
+    NG --> MAIN
 ```
 
-## Capas y archivos
+## Regla de dependencia
+
+| Capa | Depende de | No depende de |
+|---|---|---|
+| **Presentación** | Aplicación, Dominio, Infraestructura (solo wiring) | — |
+| **Aplicación** | Dominio (**JobGatewayPort**) | fetch, URLs HTTP |
+| **Dominio** | Nada externo | React, fetch |
+| **Infraestructura** | Dominio (puerto) | Aplicación |
+
+## Archivos clave
 
 | Capa | Archivo | Responsabilidad |
 |---|---|---|
-| **Presentación** | `src/presentation/App.jsx` | Estado global, envío y polling |
-| **Presentación** | `src/presentation/components/TextAnalyzer.jsx` | Formulario de texto |
-| **Presentación** | `src/presentation/components/ResultsPanel.jsx` | Muestra sentimiento y keywords |
-| **Presentación** | `src/presentation/components/FrontendMonitor.jsx` | Panel visual de demo |
-| **Dominio** | `src/domain/jobStatus.js` | Estados del job y constantes |
-| **Aplicación** | `src/application/api.js` | Comunicación REST con Python |
-| **Infraestructura** | `nginx.conf` | Servidor web ligero (producción) |
-| **Infraestructura** | `Dockerfile` | Build multi-stage: Vite + Nginx |
+| **Dominio** | `domain/ports/jobGatewayPort.js` | Contrato del gateway |
+| **Aplicación** | `application/jobUseCases.js` | Casos de uso vía puerto |
+| **Infraestructura** | `infrastructure/http/pythonJobGateway.js` | Adaptador fetch → Python |
+| **Infraestructura** | `nginx.conf`, `Dockerfile` | Despliegue producción |

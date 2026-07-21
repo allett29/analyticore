@@ -2,7 +2,7 @@ package com.analyticore.analyseservice.application;
 
 import com.analyticore.analyseservice.domain.Job;
 import com.analyticore.analyseservice.domain.JobStatus;
-import com.analyticore.analyseservice.infrastructure.persistence.JobRepository;
+import com.analyticore.analyseservice.domain.port.JobRepositoryPort;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -22,9 +22,9 @@ public class DashboardService {
             "Resultados guardados (COMPLETADO)",
     };
 
-    private final JobRepository jobRepository;
+    private final JobRepositoryPort jobRepository;
 
-    public DashboardService(JobRepository jobRepository) {
+    public DashboardService(JobRepositoryPort jobRepository) {
         this.jobRepository = jobRepository;
     }
 

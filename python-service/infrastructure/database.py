@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from infrastructure.config import settings
 from domain.models import Job, JobStatus
+from domain.ports.job_repository_port import JobRepositoryPort
 
 Base = declarative_base()
 
@@ -46,8 +47,8 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 
-class JobRepository:
-    """Adaptador de dominio ↔ PostgreSQL."""
+class SqlAlchemyJobRepository(JobRepositoryPort):
+    """Adaptador de infraestructura — implementa JobRepositoryPort con SQLAlchemy."""
 
     def save(self, job: Job) -> Job:
         """BUS → PostgreSQL: INSERT INTO jobs (id, text, status, ...) VALUES (...)"""

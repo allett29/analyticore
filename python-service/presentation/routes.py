@@ -1,5 +1,5 @@
 """
-Capa de Presentación — Endpoints REST del Servicio Python.
+Capa de Presentación — Endpoints REST (composition root: inyecta adaptadores).
 """
 import json
 from uuid import UUID
@@ -8,15 +8,12 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from application.use_cases import GetJobStatusUseCase, SubmitTextUseCase
-from infrastructure.database import JobRepository
-from infrastructure.java_client import JavaAnalysisClient
+from infrastructure.dependencies import get_analysis_client, get_job_repository
 
 router = APIRouter()
 
-job_repository = JobRepository()
-java_client = JavaAnalysisClient()
-submit_use_case = SubmitTextUseCase(job_repository, java_client)
-get_status_use_case = GetJobStatusUseCase(job_repository)
+submit_use_case = SubmitTextUseCase(get_job_repository(), get_analysis_client())
+get_status_use_case = GetJobStatusUseCase(get_job_repository())
 
 
 class SubmitTextRequest(BaseModel):
