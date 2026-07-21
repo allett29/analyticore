@@ -7,11 +7,65 @@ Prototipo de arquitectura orientada a servicios en la nube para análisis de sen
 ```
 AnalytiCore/
 ├── frontend/           # React SPA servida con Nginx
-├── python-service/   # API de submisión y orquestación (FastAPI)
-├── java-service/     # Worker de análisis (Spring Boot)
-├── docs/             # Diagramas e informe ejecutivo
-├── database/         # Esquema SQL de referencia
+├── python-service/     # API de submisión y orquestación (FastAPI)
+├── java-service/       # Worker de análisis (Spring Boot)
+├── docs/               # Diagramas e informe ejecutivo
+├── database/           # Esquema SQL de referencia
 └── docker-compose.yml  # Entorno local completo
+```
+
+### Arquitectura limpia por componente
+
+**Frontend** — expande `frontend/src/`:
+
+```
+src/
+├── presentation/          # UI React (App, componentes, estilos)
+│   ├── main.jsx
+│   ├── App.jsx
+│   ├── index.css
+│   └── components/
+├── application/           # Casos de uso del cliente (REST)
+│   └── api.js
+└── domain/                # Constantes de negocio
+    └── jobStatus.js
+```
+
+**Python** — expande `python-service/`:
+
+```
+python-service/
+├── presentation/          # FastAPI (endpoints, app, panel)
+│   ├── main.py
+│   ├── routes.py
+│   └── dashboard.py
+├── application/           # Casos de uso
+│   └── use_cases.py
+├── domain/                # Entidades puras
+│   └── models.py
+└── infrastructure/        # PostgreSQL, cliente Java, config
+    ├── database.py
+    ├── java_client.py
+    └── config.py
+```
+
+**Java** — expande `java-service/src/main/java/com/analyticore/analyseservice/`:
+
+```
+analyseservice/
+├── presentation/          # Controllers REST
+│   ├── AnalysisController.java
+│   └── DashboardController.java
+├── application/           # Servicios y worker asíncrono
+│   ├── AnalysisService.java
+│   ├── AnalysisWorker.java
+│   └── DashboardService.java
+├── domain/                # Modelo de dominio (sin JPA)
+│   ├── Job.java
+│   └── JobStatus.java
+└── infrastructure/        # Persistencia y configuración
+    ├── config/
+    └── persistence/
 ```
 
 ## Flujo de datos
