@@ -5,8 +5,13 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Capa de Dominio + Infraestructura (entidad JPA).
- * Mapea la tabla 'jobs' en PostgreSQL — estado externalizado (stateless).
+ * Capa de Dominio — Entidad Job (mapeada a PostgreSQL vía JPA).
+ *
+ * Tabla compartida: PostgreSQL 'jobs' (database/schema.sql)
+ * Accedida por Python vía SQLAlchemy (infrastructure/database.py)
+ * Accedida por Java  vía JPA       (repository/JobRepository.java)
+ *
+ * No se comunica directamente con otros servicios — solo con la BD.
  */
 @Entity
 @Table(name = "jobs")

@@ -12,19 +12,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Capa de Aplicación: lógica de análisis de sentimiento y extracción de keywords.
- * Orquesta lectura/escritura en BD sin guardar estado en memoria (stateless).
+ * Capa de Aplicación — Lógica de análisis de sentimiento y extracción de keywords.
+ *
+ * Comunicaciones de este servicio:
+ *   ENTRADA  ← controller/AnalysisController.java línea 30 (POST /api/analyze/{jobId})
+ *   SALIDA   → repository/JobRepository.java (bus JDBC/JPA → PostgreSQL tabla 'jobs')
+ *
+ * El estado de negocio NO se guarda en memoria — solo en PostgreSQL (patrón stateless).
  */
 @Service
 public class AnalysisService {
 
-    /** Pausa entre pasos del panel / (solo demo visual, en ms) */
     private static final long DEMO_STEP_DELAY_MS = 1200;
 
     private final JobRepository jobRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Listas simples para análisis de sentimiento en español
     private static final Set<String> POSITIVE_WORDS = Set.of(
             "bueno", "buena", "excelente", "genial", "fantastico", "maravilloso",
             "feliz", "alegre", "amor", "positivo", "increible", "perfecto", "gracias"
@@ -33,8 +36,6 @@ public class AnalysisService {
             "malo", "mala", "terrible", "horrible", "triste", "odio", "negativo",
             "pesimo", "decepcion", "enojo", "molesto", "fatal", "problema"
     );
-
-    // Stopwords en español para extracción de keywords
     private static final Set<String> STOPWORDS = Set.of(
             "el", "la", "los", "las", "un", "una", "de", "del", "en", "y", "o",
             "a", "que", "es", "son", "con", "por", "para", "se", "su", "sus",
@@ -46,14 +47,19 @@ public class AnalysisService {
     }
 
     /**
-     * Procesa un job: PROCESANDO → análisis → COMPLETADO.
-     * Llamado por el Controller cuando Python notifica vía REST.
+     * Procesa un job completo: PROCESANDO → análisis → COMPLETADO.
+     *
+     * Secuencia de comunicación con PostgreSQL:
+     *   línea 57 → SELECT (leer texto del job creado por Python)
+     *   línea 68 → UPDATE status='PROCESANDO'
+     *   línea 85 → UPDATE status='COMPLETADO' + sentiment + score + keywords
      */
     @Transactional
     public Job analyzeJob(UUID jobId) {
         ActivityTracker.onReceived(jobId.toString());
         pause(DEMO_STEP_DELAY_MS);
 
+        // BUS → PostgreSQL: SELECT * FROM jobs WHERE id = {jobId}
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
 
@@ -62,12 +68,14 @@ public class AnalysisService {
         ActivityTracker.onReadingDb(preview);
         pause(DEMO_STEP_DELAY_MS);
 
+        // BUS → PostgreSQL: UPDATE jobs SET status='PROCESANDO'
         ActivityTracker.onProcessing();
         job.setStatus(JobStatus.PROCESANDO);
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
         pause(DEMO_STEP_DELAY_MS);
 
+        // Lógica de dominio (sin I/O): análisis en memoria, resultado se persiste abajo
         ActivityTracker.onAnalyzingSentiment();
         SentimentResult sentiment = analyzeSentiment(job.getText());
         pause(DEMO_STEP_DELAY_MS);
@@ -76,6 +84,7 @@ public class AnalysisService {
         List<String> keywords = extractKeywords(job.getText());
         pause(DEMO_STEP_DELAY_MS);
 
+        // BUS → PostgreSQL: UPDATE jobs SET status='COMPLETADO', sentiment, score, keywords
         ActivityTracker.onSaving(sentiment.label(), keywords.toString());
         job.setSentiment(sentiment.label());
         job.setScore(sentiment.score());
@@ -89,7 +98,6 @@ public class AnalysisService {
         return job;
     }
 
-    /** Pausa breve para que el panel / muestre cada paso interno (solo demo). */
     private void pause(long ms) {
         try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }

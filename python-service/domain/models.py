@@ -1,6 +1,9 @@
 """
-Capa de Dominio: entidades y reglas de negocio puras.
-No depende de FastAPI, SQLAlchemy ni HTTP.
+Capa de Dominio — Entidades puras de negocio.
+
+No se comunica con ningún servicio externo.
+Compartida conceptualmente con java-service/domain/Job.java y JobStatus.java.
+El estado se persiste en PostgreSQL tabla 'jobs' (vía capa de infraestructura).
 """
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,20 +13,20 @@ from uuid import UUID
 
 
 class JobStatus(str, Enum):
-    """Estados del ciclo de vida de un trabajo de análisis."""
-    PENDIENTE = "PENDIENTE"
-    PROCESANDO = "PROCESANDO"
-    COMPLETADO = "COMPLETADO"
+    """Estados del ciclo de vida — sincronizados con la columna 'status' en PostgreSQL."""
+    PENDIENTE = "PENDIENTE"      # Creado por Python (use_cases.py línea 34)
+    PROCESANDO = "PROCESANDO"    # Actualizado por Java (AnalysisService.java línea 66)
+    COMPLETADO = "COMPLETADO"    # Actualizado por Java (AnalysisService.java línea 83)
 
 
 @dataclass
 class Job:
-    """Entidad de dominio que representa un trabajo de análisis de texto."""
+    """Entidad de dominio: un trabajo de análisis de texto."""
     id: UUID
     text: str
     status: JobStatus
-    sentiment: Optional[str] = None
-    score: Optional[float] = None
-    keywords: Optional[str] = None
+    sentiment: Optional[str] = None   # Escrito por Java en PostgreSQL
+    score: Optional[float] = None     # Escrito por Java en PostgreSQL
+    keywords: Optional[str] = None    # Escrito por Java en PostgreSQL (JSON string)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

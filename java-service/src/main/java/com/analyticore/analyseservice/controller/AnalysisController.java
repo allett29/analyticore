@@ -8,8 +8,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Capa de Presentación: API REST interna expuesta al Servicio Python.
- * POST /api/analyze/{jobId} — punto de entrada cuando Python orquesta el análisis.
+ * Capa de Presentación — API REST interna del Servicio Java.
+ *
+ * BUS ENTRANTE (quién llama a este controlador):
+ *   Python → infrastructure/java_client.py línea 27
+ *     POST {JAVA_SERVICE_URL}/api/analyze/{jobId}
+ *
+ * BUS SALIENTE (a quién delega):
+ *   service/AnalysisService.java analyzeJob() → repository/JobRepository.java → PostgreSQL
  */
 @RestController
 @RequestMapping("/api")
@@ -22,8 +28,11 @@ public class AnalysisController {
     }
 
     /**
-     * Recibe notificación del Servicio Python para procesar un job.
-     * Java lee el texto desde PostgreSQL, analiza y persiste resultados.
+     * Endpoint del bus REST interno Python → Java.
+     *
+     * Llamado por: python-service/infrastructure/java_client.py línea 27 (httpx.post)
+     * Delega a:    service/AnalysisService.java línea 53 (analyzeJob)
+     * Responde:    JSON { jobId, status, sentiment, score } a Python (llamada síncrona)
      */
     @PostMapping("/analyze/{jobId}")
     public ResponseEntity<Map<String, Object>> analyze(@PathVariable UUID jobId) {
@@ -36,7 +45,7 @@ public class AnalysisController {
         ));
     }
 
-    /** Endpoint de salud para Render y monitoreo */
+    /** Health check para Render — sin comunicación con otros servicios. */
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
         return ResponseEntity.ok(Map.of("status", "ok", "service", "java-analysis"));

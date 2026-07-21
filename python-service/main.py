@@ -1,6 +1,12 @@
 """
-Punto de entrada del Servicio de Submisión (Python).
-Expone la API REST que recibe solicitudes del Frontend y orquesta el análisis con Java.
+Capa de Presentación — Punto de entrada del Servicio de Submisión (Python/FastAPI).
+
+BUS DE COMUNICACIÓN: REST/HTTP (no hay cola ni mensajería; cada servicio expone APIs).
+
+Conexiones de este servicio:
+  ENTRADA  → Frontend (React)  : POST/GET /api/jobs        (línea 39, api/routes.py)
+  SALIDA   → Java (Spring Boot) : POST /api/analyze/{jobId} (línea 27, infrastructure/java_client.py)
+  SALIDA   → PostgreSQL (Render): SQL vía SQLAlchemy       (línea 32, infrastructure/database.py)
 """
 from contextlib import asynccontextmanager
 
@@ -14,7 +20,7 @@ from infrastructure.database import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Inicializa la base de datos al arrancar el servicio."""
+    """Al arrancar: crea tabla 'jobs' en PostgreSQL si no existe (init_db)."""
     init_db()
     yield
 
@@ -26,7 +32,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS: permite que el Frontend (React/Nginx) llame a esta API desde otro origen
+# CORS: permite peticiones REST desde el Frontend (origen distinto en Render)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -35,13 +41,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rutas de la API REST bajo /api
+# Monta el bus REST hacia el Frontend bajo el prefijo /api
 app.include_router(router, prefix="/api")
-# Panel de monitoreo visual en / (para abrir en el navegador)
+# Panel visual de demo (no participa en el flujo de negocio)
 app.include_router(dashboard_router)
 
 
 @app.get("/health")
 def health_check():
-    """Endpoint de salud para Render y monitoreo."""
+    """Health check para Render — no comunica con otros servicios."""
     return {"status": "ok", "service": "python-submission"}

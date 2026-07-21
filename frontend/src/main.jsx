@@ -1,6 +1,8 @@
 /**
- * Punto de entrada del Frontend (React SPA).
- * Monta la aplicación de una sola página en el DOM.
+ * Punto de entrada del Frontend — monta la SPA React en el DOM.
+ * Servido en producción por Nginx (frontend/nginx.conf → puerto 80).
+ *
+ * No tiene comunicación con servicios externos — solo inicializa React.
  */
 import React from 'react'
 import ReactDOM from 'react-dom/client'

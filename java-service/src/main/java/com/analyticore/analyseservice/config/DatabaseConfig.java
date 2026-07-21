@@ -11,9 +11,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Configuración externa de PostgreSQL.
- * Render provee DATABASE_URL sin puerto explícito (postgres://user:pass@host/db).
- * El driver JDBC de PostgreSQL requiere host:puerto, por eso se parsea la URL.
+ * Capa de Infraestructura — Configuración del bus PostgreSQL.
+ *
+ * Variable externa Render: DATABASE_URL
+ * Usado por: repository/JobRepository.java (Spring Data JPA → JDBC)
+ * Tabla compartida con Python: 'jobs' (database/schema.sql)
  */
 @Configuration
 public class DatabaseConfig {
@@ -49,7 +51,6 @@ public class DatabaseConfig {
     }
 
     private ParsedDbUrl parseDatabaseUrl(String databaseUrl) {
-        // Docker Compose: ya viene en formato jdbc:postgresql://host:5432/db
         if (databaseUrl.startsWith("jdbc:postgresql://")) {
             return new ParsedDbUrl(
                     databaseUrl,
@@ -58,7 +59,6 @@ public class DatabaseConfig {
             );
         }
 
-        // Render: postgres://user:pass@host/db (sin puerto en la URL interna)
         String uriScheme = databaseUrl.startsWith("postgres://") ? "http://" : "http://";
         String normalized = databaseUrl
                 .replaceFirst("^postgres://", uriScheme)
@@ -83,7 +83,6 @@ public class DatabaseConfig {
                 }
             }
 
-            // JDBC requiere host:puerto y credenciales separadas de la URL
             String jdbcUrl = String.format(
                     "jdbc:postgresql://%s:%d/%s?sslmode=require",
                     host, port, dbName

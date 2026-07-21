@@ -1,6 +1,13 @@
 """
-Capa de Infraestructura: acceso a PostgreSQL.
-Externaliza todo el estado (patrón stateless del servicio).
+Capa de Infraestructura — Acceso a PostgreSQL (Render).
+
+BUS DE COMUNICACIÓN: SQL vía SQLAlchemy → PostgreSQL tabla 'jobs'
+URL de conexión: config.py settings.database_url (variable DATABASE_URL en Render)
+
+Quién usa este módulo:
+  application/use_cases.py → save()       INSERT (Python crea job PENDIENTE)
+  application/use_cases.py → find_by_id() SELECT (Frontend consulta vía polling)
+  (Java también lee/escribe la misma tabla vía JPA en java-service/repository/)
 """
 from datetime import datetime
 from uuid import UUID
@@ -16,7 +23,7 @@ Base = declarative_base()
 
 
 class JobORM(Base):
-    """Modelo ORM que mapea la tabla 'jobs' en PostgreSQL."""
+    """Mapeo ORM → tabla PostgreSQL 'jobs' (schema en database/schema.sql)."""
     __tablename__ = "jobs"
 
     id = Column(PGUUID(as_uuid=True), primary_key=True)
@@ -29,19 +36,21 @@ class JobORM(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+# Conexión al bus PostgreSQL — URL externa desde Render (DATABASE_URL)
 engine = create_engine(settings.database_url)
 SessionLocal = sessionmaker(bind=engine)
 
 
 def init_db():
-    """Crea la tabla si no existe (compatible con schema.sql)."""
+    """Al arrancar (main.py lifespan): crea tabla 'jobs' si no existe."""
     Base.metadata.create_all(bind=engine)
 
 
 class JobRepository:
-    """Repositorio: traduce entre entidades de dominio y registros de BD."""
+    """Adaptador de dominio ↔ PostgreSQL."""
 
     def save(self, job: Job) -> Job:
+        """BUS → PostgreSQL: INSERT INTO jobs (id, text, status, ...) VALUES (...)"""
         with Session(engine) as session:
             orm_job = JobORM(
                 id=job.id,
@@ -56,6 +65,7 @@ class JobRepository:
             return self._to_domain(orm_job)
 
     def find_by_id(self, job_id: UUID) -> Job | None:
+        """BUS → PostgreSQL: SELECT * FROM jobs WHERE id = {jobId}"""
         with Session(engine) as session:
             orm_job = session.get(JobORM, job_id)
             if orm_job is None:
@@ -63,7 +73,7 @@ class JobRepository:
             return self._to_domain(orm_job)
 
     def find_latest(self) -> Job | None:
-        """Último job en BD — usado por el panel de monitoreo en /"""
+        """Solo para panel visual de demo (api/dashboard.py) — no es flujo de negocio."""
         with Session(engine) as session:
             orm_job = (
                 session.query(JobORM)
