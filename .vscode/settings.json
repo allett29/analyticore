@@ -1,0 +1,10 @@
+{
+  "explorer.compactFolders": true,
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/__pycache__": true,
+    "**/target": true,
+    "**/.vite": true
+  }
+}
