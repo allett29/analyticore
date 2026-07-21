@@ -1,6 +1,8 @@
 package com.analyticore.analyseservice.config;
 
 import com.zaxxer.hikari.HikariDataSource;
+import java.net.URI;
+import java.net.URISyntaxException;
 import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -10,8 +12,8 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * Configuración externa de PostgreSQL.
- * Render provee DATABASE_URL en formato postgres:// — se convierte a jdbc:postgresql://
- * Docker Compose usa jdbc:postgresql:// directamente.
+ * Render provee DATABASE_URL sin puerto explícito (postgres://user:pass@host/db).
+ * El driver JDBC de PostgreSQL requiere host:puerto, por eso se parsea la URL.
  */
 @Configuration
 public class DatabaseConfig {
@@ -22,7 +24,19 @@ public class DatabaseConfig {
     public DataSourceProperties dataSourceProperties() {
         DataSourceProperties props = new DataSourceProperties();
         props.setDriverClassName("org.postgresql.Driver");
-        props.setUrl(resolveDatabaseUrl());
+
+        String databaseUrl = System.getenv("DATABASE_URL");
+        if (databaseUrl == null || databaseUrl.isBlank()) {
+            props.setUrl("jdbc:postgresql://localhost:5432/analyticore");
+            props.setUsername(envOrDefault("DATABASE_USER", "analyticore"));
+            props.setPassword(envOrDefault("DATABASE_PASSWORD", "analyticore"));
+            return props;
+        }
+
+        ParsedDbUrl parsed = parseDatabaseUrl(databaseUrl);
+        props.setUrl(parsed.jdbcUrl());
+        props.setUsername(parsed.username());
+        props.setPassword(parsed.password());
         return props;
     }
 
@@ -34,22 +48,57 @@ public class DatabaseConfig {
                 .build();
     }
 
-    private String resolveDatabaseUrl() {
-        String databaseUrl = System.getenv("DATABASE_URL");
-
-        if (databaseUrl == null || databaseUrl.isBlank()) {
-            return "jdbc:postgresql://localhost:5432/analyticore";
+    private ParsedDbUrl parseDatabaseUrl(String databaseUrl) {
+        // Docker Compose: ya viene en formato jdbc:postgresql://host:5432/db
+        if (databaseUrl.startsWith("jdbc:postgresql://")) {
+            return new ParsedDbUrl(
+                    databaseUrl,
+                    envOrDefault("DATABASE_USER", "analyticore"),
+                    envOrDefault("DATABASE_PASSWORD", "analyticore")
+            );
         }
 
-        // Render: postgres://user:pass@host:port/db → jdbc:postgresql://...
-        if (databaseUrl.startsWith("postgres://")) {
-            return databaseUrl.replace("postgres://", "jdbc:postgresql://");
-        }
-        if (databaseUrl.startsWith("postgresql://")) {
-            return databaseUrl.replace("postgresql://", "jdbc:postgresql://");
-        }
+        // Render: postgres://user:pass@host/db (sin puerto en la URL interna)
+        String uriScheme = databaseUrl.startsWith("postgres://") ? "http://" : "http://";
+        String normalized = databaseUrl
+                .replaceFirst("^postgres://", uriScheme)
+                .replaceFirst("^postgresql://", uriScheme);
 
-        // Docker Compose: ya viene en formato jdbc:postgresql://
-        return databaseUrl;
+        try {
+            URI uri = new URI(normalized);
+            String host = uri.getHost();
+            int port = uri.getPort() > 0 ? uri.getPort() : 5432;
+            String dbName = uri.getPath().replaceFirst("^/", "");
+
+            String username = "";
+            String password = "";
+            String userInfo = uri.getUserInfo();
+            if (userInfo != null) {
+                int colon = userInfo.indexOf(':');
+                if (colon >= 0) {
+                    username = userInfo.substring(0, colon);
+                    password = userInfo.substring(colon + 1);
+                } else {
+                    username = userInfo;
+                }
+            }
+
+            // JDBC requiere host:puerto y credenciales separadas de la URL
+            String jdbcUrl = String.format(
+                    "jdbc:postgresql://%s:%d/%s?sslmode=require",
+                    host, port, dbName
+            );
+
+            return new ParsedDbUrl(jdbcUrl, username, password);
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("DATABASE_URL inválida", e);
+        }
     }
+
+    private String envOrDefault(String key, String defaultValue) {
+        String value = System.getenv(key);
+        return (value == null || value.isBlank()) ? defaultValue : value;
+    }
+
+    private record ParsedDbUrl(String jdbcUrl, String username, String password) {}
 }
