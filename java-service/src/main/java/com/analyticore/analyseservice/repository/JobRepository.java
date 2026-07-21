@@ -1,5 +1,6 @@
-package com.analyticore.analyseservice.domain;
+package com.analyticore.analyseservice.repository;
 
+import com.analyticore.analyseservice.domain.Job;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
