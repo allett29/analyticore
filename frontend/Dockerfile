@@ -5,10 +5,14 @@ COPY package.json ./
 RUN npm install
 COPY . .
 
-# Render inyecta VITE_API_URL como variable de entorno en build time
+# Render inyecta estas variables en build time
 ARG VITE_API_URL=http://localhost:8000
+ARG VITE_PYTHON_URL=http://localhost:8000
+ARG VITE_JAVA_URL=http://localhost:8080
 ENV VITE_API_URL=$VITE_API_URL
-RUN echo "Building with VITE_API_URL=$VITE_API_URL" && npm run build
+ENV VITE_PYTHON_URL=$VITE_PYTHON_URL
+ENV VITE_JAVA_URL=$VITE_JAVA_URL
+RUN npm run build
 
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf

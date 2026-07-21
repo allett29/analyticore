@@ -5,12 +5,12 @@
 import { useState, useRef } from 'react'
 import TextAnalyzer from './components/TextAnalyzer'
 import ResultsPanel from './components/ResultsPanel'
-import ProcessFlow from './components/ProcessFlow'
+import FrontendMonitor from './components/FrontendMonitor'
 import { submitText, getJobStatus } from './services/api'
 
 const POLL_INTERVAL_MS = 2000
 
-/** Mapea el estado del job al paso visual del diagrama de flujo */
+/** Mapea el estado del job al paso visual global del flujo */
 function statusToFlowStep(status) {
   if (status === 'PENDIENTE') return 3
   if (status === 'PROCESANDO') return 5
@@ -25,10 +25,9 @@ export default function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [flowStep, setFlowStep] = useState(-1) // -1 = diagrama en reposo
+  const [flowStep, setFlowStep] = useState(-1)
   const stepTimerRef = useRef(null)
 
-  /** Avanza el diagrama paso a paso mientras espera respuesta del servidor */
   const startFlowAnimation = () => {
     setFlowStep(0)
     let step = 0
@@ -45,10 +44,6 @@ export default function App() {
     }
   }
 
-  /**
-   * Flujo paso 1 y 2: Usuario envía texto → Frontend llama POST /api/jobs (Python)
-   * Python crea PENDIENTE, llama Java, devuelve jobId.
-   */
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -61,25 +56,18 @@ export default function App() {
     try {
       const response = await submitText(text)
       stopFlowAnimation()
-
       setJobId(response.jobId)
 
-      // Consulta inmediata: Python llama Java de forma síncrona, el estado real ya está en BD
       const job = await getJobStatus(response.jobId)
       setStatus(job.status)
       setFlowStep(statusToFlowStep(job.status))
 
       if (job.status === 'COMPLETADO') {
-        setResults({
-          sentiment: job.sentiment,
-          score: job.score,
-          keywords: job.keywords,
-        })
+        setResults({ sentiment: job.sentiment, score: job.score, keywords: job.keywords })
         setLoading(false)
         return
       }
 
-      // Si aún no completó, polling hasta COMPLETADO
       pollJobStatus(response.jobId)
     } catch (err) {
       stopFlowAnimation()
@@ -89,10 +77,6 @@ export default function App() {
     }
   }
 
-  /**
-   * Consulta GET /api/jobs/{jobId} cada 2 segundos.
-   * Actualiza el diagrama según el estado del job en PostgreSQL.
-   */
   const pollJobStatus = (id) => {
     const intervalId = setInterval(async () => {
       try {
@@ -101,11 +85,7 @@ export default function App() {
         setFlowStep(statusToFlowStep(job.status))
 
         if (job.status === 'COMPLETADO') {
-          setResults({
-            sentiment: job.sentiment,
-            score: job.score,
-            keywords: job.keywords,
-          })
+          setResults({ sentiment: job.sentiment, score: job.score, keywords: job.keywords })
           setLoading(false)
           clearInterval(intervalId)
         }
@@ -127,11 +107,7 @@ export default function App() {
       </header>
 
       <main className="main">
-        <ProcessFlow
-          activeStep={flowStep}
-          status={status}
-          isRunning={loading}
-        />
+        <FrontendMonitor flowStep={flowStep} status={status} isRunning={loading} />
 
         <TextAnalyzer
           text={text}

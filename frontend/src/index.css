@@ -200,190 +200,125 @@ body {
   to { transform: rotate(360deg); }
 }
 
-/* ── Diagrama de flujo animado ── */
-.process-flow {
+/* ── Panel de monitoreo del Frontend ── */
+.frontend-monitor {
   background: #1e293b;
   border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.process-flow-header h2 {
-  font-size: 1.1rem;
-  color: #f1f5f9;
-  margin-bottom: 0.25rem;
-}
-
-.process-flow-header p {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 1.25rem;
-}
-
-.process-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.process-step-wrapper {
-  display: flex;
-  flex-direction: column;
-}
-
-.process-step {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
+  border-left: 3px solid #38bdf8;
   border-radius: 12px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  position: relative;
-  transition: all 0.4s ease;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
-/* Reposo: todos los pasos visibles pero apagados */
-.process-step--idle {
-  opacity: 0.45;
-  border-color: #1e293b;
+.monitor-header h2 {
+  font-size: 1rem;
+  color: #f1f5f9;
+  margin-top: 0.4rem;
 }
 
-/* Pendiente: aún no llega */
-.process-step--pending {
-  opacity: 0.35;
-  border-color: #1e293b;
+.monitor-header p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.2rem;
 }
 
-/* Activo: pulso y brillo */
-.process-step--active {
-  opacity: 1;
-  border-color: var(--step-color, #38bdf8);
-  background: #1a2744;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
-  transform: scale(1.02);
+.monitor-badge {
+  display: inline-block;
+  background: #38bdf822;
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-/* Completado: check verde */
-.process-step--done {
-  opacity: 0.75;
-  border-color: #166534;
-  background: #0f1f17;
-}
-
-.process-step-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: #334155;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  flex-shrink: 0;
-  transition: background 0.4s;
-}
-
-.process-step--active .process-step-icon {
-  background: color-mix(in srgb, var(--step-color, #38bdf8) 25%, #334155);
-}
-
-.process-step--done .process-step-icon {
-  background: #166534;
-  color: #bbf7d0;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.process-step-info {
+.monitor-steps {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
+  gap: 0.5rem;
+  margin: 1rem 0;
 }
 
-.process-step-service {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #e2e8f0;
-}
-
-.process-step-tech {
-  font-size: 0.75rem;
-  color: #64748b;
-  font-family: monospace;
-}
-
-.process-step-action {
-  font-size: 0.8rem;
-  color: #94a3b8;
-}
-
-/* Anillo de pulso en el paso activo */
-.process-step-pulse {
-  position: absolute;
-  inset: -3px;
-  border-radius: 14px;
-  border: 2px solid;
-  animation: pulse-ring 1.5s ease-out infinite;
-  pointer-events: none;
-}
-
-@keyframes pulse-ring {
-  0%   { opacity: 0.8; transform: scale(1); }
-  100% { opacity: 0;   transform: scale(1.06); }
-}
-
-/* Conector vertical entre pasos */
-.process-connector {
-  display: flex;
-  justify-content: center;
-  height: 28px;
-  position: relative;
-  margin-left: 2.1rem;
-}
-
-.process-connector-line {
-  width: 2px;
-  height: 100%;
-  background: #334155;
-  transition: background 0.4s;
-}
-
-.process-connector--done .process-connector-line,
-.process-connector--active .process-connector-line {
-  background: linear-gradient(180deg, #4ade80, #38bdf8);
-}
-
-/* Punto que viaja por el conector */
-.process-connector-dot {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--step-color, #38bdf8);
-  box-shadow: 0 0 8px var(--step-color, #38bdf8);
-  animation: travel-down 0.7s ease-in-out infinite;
-}
-
-@keyframes travel-down {
-  0%   { top: 0;   opacity: 1; }
-  100% { top: 100%; opacity: 0; }
-}
-
-.process-status-legend {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #334155;
+.monitor-step {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
   font-size: 0.85rem;
-  color: #94a3b8;
+  transition: all 0.3s;
+}
+
+.monitor-step--idle { opacity: 0.4; }
+.monitor-step--active {
+  border-color: #38bdf8;
+  background: #1a2744;
+  box-shadow: 0 0 12px #38bdf822;
+  animation: pulse-step 1.2s ease-in-out infinite;
+}
+.monitor-step--done {
+  border-color: #166534;
+  background: #0f1f17;
+  opacity: 0.8;
+}
+
+.monitor-step-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.monitor-step--active .monitor-step-icon { background: #38bdf833; color: #38bdf8; }
+.monitor-step--done .monitor-step-icon { background: #166534; color: #bbf7d0; }
+
+@keyframes pulse-step {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.monitor-links p {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 0.6rem;
+}
+
+.monitor-link-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.monitor-link {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.monitor-link:hover { opacity: 0.85; }
+
+.monitor-link--python {
+  background: #4ade8022;
+  border: 1px solid #4ade80;
+  color: #4ade80;
+}
+
+.monitor-link--java {
+  background: #f9731622;
+  border: 1px solid #f97316;
+  color: #f97316;
 }
 
 .footer {

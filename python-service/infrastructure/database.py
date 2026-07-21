@@ -62,6 +62,18 @@ class JobRepository:
                 return None
             return self._to_domain(orm_job)
 
+    def find_latest(self) -> Job | None:
+        """Último job en BD — usado por el panel de monitoreo en /"""
+        with Session(engine) as session:
+            orm_job = (
+                session.query(JobORM)
+                .order_by(JobORM.created_at.desc())
+                .first()
+            )
+            if orm_job is None:
+                return None
+            return self._to_domain(orm_job)
+
     @staticmethod
     def _to_domain(orm_job: JobORM) -> Job:
         return Job(

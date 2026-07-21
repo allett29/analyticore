@@ -47,6 +47,8 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: http://localhost:8000
+        VITE_PYTHON_URL: http://localhost:8000
+        VITE_JAVA_URL: http://localhost:8080
     ports:
       - "3000:80"
     depends_on:

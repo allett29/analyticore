@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes import router
+from api.dashboard import router as dashboard_router
 from infrastructure.database import init_db
 
 
@@ -34,8 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Registra las rutas REST bajo /api
+# Rutas de la API REST bajo /api
 app.include_router(router, prefix="/api")
+# Panel de monitoreo visual en / (para abrir en el navegador)
+app.include_router(dashboard_router)
 
 
 @app.get("/health")
