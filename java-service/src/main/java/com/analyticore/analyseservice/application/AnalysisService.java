@@ -44,6 +44,7 @@ public class AnalysisService {
 
     @Transactional
     public Job startAnalysis(UUID jobId) {
+        // PASO 4a — Lee el job creado por Python y lo marca PROCESANDO en PostgreSQL
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
 
@@ -58,6 +59,7 @@ public class AnalysisService {
 
     @Transactional
     public void completeAnalysis(UUID jobId) {
+        // PASO 4b — Analiza el texto y guarda sentimiento, score, keywords como COMPLETADO
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
 

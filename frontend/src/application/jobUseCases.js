@@ -1,13 +1,14 @@
 /**
- * Casos de uso — dependen del puerto JobGatewayPort, no de fetch/HTTP.
+ * Casos de uso — puente entre App.jsx y el gateway.
+ * No hace HTTP directo; delega en pythonJobGateway.js.
  */
 
-/** @param {import('../domain/ports/jobGatewayPort.js').JobGatewayPort} gateway */
+/** Dispara PASO 1 → pythonJobGateway.submitText() → Python */
 export async function submitTextUseCase(gateway, text) {
   return gateway.submitText(text)
 }
 
-/** @param {import('../domain/ports/jobGatewayPort.js').JobGatewayPort} gateway */
+/** Dispara PASO 5 → pythonJobGateway.getJobStatus() → Python (polling) */
 export async function getJobStatusUseCase(gateway, jobId) {
   return gateway.getJobStatus(jobId)
 }

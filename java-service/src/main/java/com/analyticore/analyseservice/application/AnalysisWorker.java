@@ -5,7 +5,9 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
- * Worker asíncrono — completa el análisis sin bloquear la respuesta REST a Python.
+ * PASO 4b — Worker asíncrono lanzado desde AnalysisController.
+ * Ejecuta completeAnalysis() sin bloquear la respuesta 202 a Python.
+ * Al terminar, PostgreSQL queda en COMPLETADO y el Frontend lo ve en el polling (PASO 5).
  */
 @Service
 public class AnalysisWorker {

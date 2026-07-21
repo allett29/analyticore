@@ -1,5 +1,11 @@
 """
-Capa de Presentación — Endpoints REST (composition root: inyecta adaptadores).
+Capa de Presentación — Entrada REST del Servicio Python.
+
+═══ RECIBE del Frontend (pythonJobGateway.js) ═══
+  POST /api/jobs       ← PASO 1: texto del usuario
+  GET  /api/jobs/{id}  ← PASO 5: polling de estado/resultados
+
+Delega a application/use_cases.py y responde JSON al Frontend.
 """
 import json
 from uuid import UUID
@@ -47,12 +53,21 @@ def _to_response(job) -> JobResponse:
 
 @router.post("/jobs", response_model=JobResponse, status_code=201)
 def submit_job(request: SubmitTextRequest):
+    """
+    RECIBE PASO 1 ← Frontend (pythonJobGateway.submitText).
+    Valida el texto y delega a SubmitTextUseCase → guarda en PostgreSQL → notifica a Java.
+    RESPONDE al Frontend con { jobId, status }.
+    """
     job = submit_use_case.execute(request.text)
     return _to_response(job)
 
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)
 def get_job(job_id: UUID):
+    """
+    RECIBE PASO 5 ← Frontend (pythonJobGateway.getJobStatus, polling).
+    Lee el job desde PostgreSQL y devuelve estado + resultados (si COMPLETADO).
+    """
     job = get_status_use_case.execute(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Job no encontrado")

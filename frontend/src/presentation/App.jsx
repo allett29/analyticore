@@ -1,9 +1,11 @@
 /**
- * Capa de Presentación — Orquestador principal del Frontend (React SPA).
+ * Capa de Presentación — Orquestador del Frontend.
  *
- * Flujo:
- *   1. POST /api/jobs → recibe jobId
- *   2. Polling GET /api/jobs/{jobId} hasta estado COMPLETADO
+ * FLUJO DE COMUNICACIÓN:
+ *   handleSubmit()  → jobUseCases → pythonJobGateway → Python (PASO 1)
+ *   pollUntilComplete() → pythonJobGateway → Python (PASO 5, polling)
+ *
+ * Este componente NO habla con Java ni PostgreSQL.
  */
 import { useMemo, useState } from 'react'
 import { getJobStatusUseCase, submitTextUseCase } from '../application/jobUseCases'
@@ -32,8 +34,10 @@ export default function App() {
 
   const phase = useMemo(() => statusToPhase(status, loading), [status, loading])
 
+  /** PASO 5 — Polling: repite consulta a Python hasta COMPLETADO */
   const pollUntilComplete = async (id) => {
     const check = async () => {
+      // → pythonJobGateway.getJobStatus() → routes.py get_job()
       const job = await getJobStatusUseCase(pythonJobGateway, id)
       setStatus(job.status)
 
@@ -71,9 +75,11 @@ export default function App() {
     setJobId(null)
 
     try {
+      // PASO 1 — Usuario envía texto → Python (pythonJobGateway.submitText)
       const response = await submitTextUseCase(pythonJobGateway, text)
       setJobId(response.jobId)
       setStatus(response.status)
+      // PASO 5 — Inicia polling hasta que Java termine y Python devuelva COMPLETADO
       await pollUntilComplete(response.jobId)
     } catch (err) {
       setError(err.message || 'Error al enviar el texto')

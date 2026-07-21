@@ -51,7 +51,7 @@ class SqlAlchemyJobRepository(JobRepositoryPort):
     """Adaptador de infraestructura — implementa JobRepositoryPort con SQLAlchemy."""
 
     def save(self, job: Job) -> Job:
-        """BUS → PostgreSQL: INSERT INTO jobs (id, text, status, ...) VALUES (...)"""
+        """PASO 2a — INSERT en PostgreSQL: job con estado PENDIENTE (antes de notificar a Java)."""
         with Session(engine) as session:
             orm_job = JobORM(
                 id=job.id,
@@ -66,7 +66,7 @@ class SqlAlchemyJobRepository(JobRepositoryPort):
             return self._to_domain(orm_job)
 
     def find_by_id(self, job_id: UUID) -> Job | None:
-        """BUS → PostgreSQL: SELECT * FROM jobs WHERE id = {jobId}"""
+        """PASO 5 — SELECT en PostgreSQL: responde al polling del Frontend vía routes.py get_job()."""
         with Session(engine) as session:
             orm_job = session.get(JobORM, job_id)
             if orm_job is None:
