@@ -2,12 +2,21 @@
  * Componente raíz de la SPA.
  * Orquesta la UI: formulario de texto, envío al Python y polling de resultados.
  */
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import TextAnalyzer from './components/TextAnalyzer'
 import ResultsPanel from './components/ResultsPanel'
+import ProcessFlow from './components/ProcessFlow'
 import { submitText, getJobStatus } from './services/api'
 
 const POLL_INTERVAL_MS = 2000
+
+/** Mapea el estado del job al paso visual del diagrama de flujo */
+function statusToFlowStep(status) {
+  if (status === 'PENDIENTE') return 3
+  if (status === 'PROCESANDO') return 5
+  if (status === 'COMPLETADO') return 7
+  return 0
+}
 
 export default function App() {
   const [text, setText] = useState('')
@@ -16,6 +25,25 @@ export default function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [flowStep, setFlowStep] = useState(-1) // -1 = diagrama en reposo
+  const stepTimerRef = useRef(null)
+
+  /** Avanza el diagrama paso a paso mientras espera respuesta del servidor */
+  const startFlowAnimation = () => {
+    setFlowStep(0)
+    let step = 0
+    stepTimerRef.current = setInterval(() => {
+      step = Math.min(step + 1, 4)
+      setFlowStep(step)
+    }, 700)
+  }
+
+  const stopFlowAnimation = () => {
+    if (stepTimerRef.current) {
+      clearInterval(stepTimerRef.current)
+      stepTimerRef.current = null
+    }
+  }
 
   /**
    * Flujo paso 1 y 2: Usuario envía texto → Frontend llama POST /api/jobs (Python)
@@ -27,15 +55,35 @@ export default function App() {
     setError(null)
     setResults(null)
     setStatus(null)
+    setJobId(null)
+    startFlowAnimation()
 
     try {
       const response = await submitText(text)
-      setJobId(response.jobId)
-      setStatus(response.status)
+      stopFlowAnimation()
 
-      // Flujo paso 5: polling periódico con jobId hasta COMPLETADO
+      setJobId(response.jobId)
+
+      // Consulta inmediata: Python llama Java de forma síncrona, el estado real ya está en BD
+      const job = await getJobStatus(response.jobId)
+      setStatus(job.status)
+      setFlowStep(statusToFlowStep(job.status))
+
+      if (job.status === 'COMPLETADO') {
+        setResults({
+          sentiment: job.sentiment,
+          score: job.score,
+          keywords: job.keywords,
+        })
+        setLoading(false)
+        return
+      }
+
+      // Si aún no completó, polling hasta COMPLETADO
       pollJobStatus(response.jobId)
     } catch (err) {
+      stopFlowAnimation()
+      setFlowStep(-1)
       setError(err.message || 'Error al enviar el texto')
       setLoading(false)
     }
@@ -43,13 +91,14 @@ export default function App() {
 
   /**
    * Consulta GET /api/jobs/{jobId} cada 2 segundos.
-   * Se detiene cuando el estado es COMPLETADO.
+   * Actualiza el diagrama según el estado del job en PostgreSQL.
    */
   const pollJobStatus = (id) => {
     const intervalId = setInterval(async () => {
       try {
         const job = await getJobStatus(id)
         setStatus(job.status)
+        setFlowStep(statusToFlowStep(job.status))
 
         if (job.status === 'COMPLETADO') {
           setResults({
@@ -61,6 +110,8 @@ export default function App() {
           clearInterval(intervalId)
         }
       } catch (err) {
+        stopFlowAnimation()
+        setFlowStep(-1)
         setError(err.message || 'Error al consultar el estado')
         setLoading(false)
         clearInterval(intervalId)
@@ -76,6 +127,12 @@ export default function App() {
       </header>
 
       <main className="main">
+        <ProcessFlow
+          activeStep={flowStep}
+          status={status}
+          isRunning={loading}
+        />
+
         <TextAnalyzer
           text={text}
           onTextChange={setText}
