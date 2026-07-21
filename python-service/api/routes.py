@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from application.use_cases import GetJobStatusUseCase, SubmitTextUseCase
+from infrastructure.activity_tracker import on_received
 from infrastructure.database import JobRepository
 from infrastructure.java_client import JavaAnalysisClient
 
@@ -40,6 +41,7 @@ def submit_job(request: SubmitTextRequest):
     POST /api/jobs
     Flujo: validar → persistir PENDIENTE → llamar Java → devolver jobId al Frontend.
     """
+    on_received(request.text)
     job = submit_use_case.execute(request.text)
     return JobResponse(jobId=str(job.id), status=job.status.value)
 

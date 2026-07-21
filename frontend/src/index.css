@@ -222,6 +222,45 @@ body {
   margin-top: 0.2rem;
 }
 
+.monitor-live {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.monitor-live--active {
+  border-color: #38bdf8;
+  box-shadow: 0 0 14px #38bdf822;
+}
+
+.monitor-live-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.monitor-live-msg {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+.monitor-live-msg--pulse {
+  animation: pulse-step 1s ease-in-out infinite;
+}
+
+.monitor-live-detail {
+  margin-top: 0.4rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-family: monospace;
+  word-break: break-all;
+}
+
 .monitor-badge {
   display: inline-block;
   background: #38bdf822;
@@ -253,6 +292,7 @@ body {
 }
 
 .monitor-step--idle { opacity: 0.4; }
+.monitor-step--pending { opacity: 0.3; }
 .monitor-step--active {
   border-color: #38bdf8;
   background: #1a2744;

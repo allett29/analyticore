@@ -2,21 +2,13 @@
  * Componente raíz de la SPA.
  * Orquesta la UI: formulario de texto, envío al Python y polling de resultados.
  */
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import TextAnalyzer from './components/TextAnalyzer'
 import ResultsPanel from './components/ResultsPanel'
 import FrontendMonitor from './components/FrontendMonitor'
 import { submitText, getJobStatus } from './services/api'
 
 const POLL_INTERVAL_MS = 2000
-
-/** Mapea el estado del job al paso visual global del flujo */
-function statusToFlowStep(status) {
-  if (status === 'PENDIENTE') return 3
-  if (status === 'PROCESANDO') return 5
-  if (status === 'COMPLETADO') return 7
-  return 0
-}
 
 export default function App() {
   const [text, setText] = useState('')
@@ -25,24 +17,8 @@ export default function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [flowStep, setFlowStep] = useState(-1)
-  const stepTimerRef = useRef(null)
-
-  const startFlowAnimation = () => {
-    setFlowStep(0)
-    let step = 0
-    stepTimerRef.current = setInterval(() => {
-      step = Math.min(step + 1, 4)
-      setFlowStep(step)
-    }, 700)
-  }
-
-  const stopFlowAnimation = () => {
-    if (stepTimerRef.current) {
-      clearInterval(stepTimerRef.current)
-      stepTimerRef.current = null
-    }
-  }
+  // Fase interna del Frontend: 0=espera, 1=preparando, 2=enviando, 3=polling, 4=resultado
+  const [phase, setPhase] = useState(0)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -51,27 +27,28 @@ export default function App() {
     setResults(null)
     setStatus(null)
     setJobId(null)
-    startFlowAnimation()
+    setPhase(1)
 
     try {
+      setPhase(2)
       const response = await submitText(text)
-      stopFlowAnimation()
       setJobId(response.jobId)
 
+      setPhase(3)
       const job = await getJobStatus(response.jobId)
       setStatus(job.status)
-      setFlowStep(statusToFlowStep(job.status))
 
       if (job.status === 'COMPLETADO') {
-        setResults({ sentiment: job.sentiment, score: job.score, keywords: job.keywords })
+        const res = { sentiment: job.sentiment, score: job.score, keywords: job.keywords }
+        setResults(res)
+        setPhase(4)
         setLoading(false)
         return
       }
 
       pollJobStatus(response.jobId)
     } catch (err) {
-      stopFlowAnimation()
-      setFlowStep(-1)
+      setPhase(0)
       setError(err.message || 'Error al enviar el texto')
       setLoading(false)
     }
@@ -82,16 +59,16 @@ export default function App() {
       try {
         const job = await getJobStatus(id)
         setStatus(job.status)
-        setFlowStep(statusToFlowStep(job.status))
 
         if (job.status === 'COMPLETADO') {
-          setResults({ sentiment: job.sentiment, score: job.score, keywords: job.keywords })
+          const res = { sentiment: job.sentiment, score: job.score, keywords: job.keywords }
+          setResults(res)
+          setPhase(4)
           setLoading(false)
           clearInterval(intervalId)
         }
       } catch (err) {
-        stopFlowAnimation()
-        setFlowStep(-1)
+        setPhase(0)
         setError(err.message || 'Error al consultar el estado')
         setLoading(false)
         clearInterval(intervalId)
@@ -107,7 +84,13 @@ export default function App() {
       </header>
 
       <main className="main">
-        <FrontendMonitor flowStep={flowStep} status={status} isRunning={loading} />
+        <FrontendMonitor
+          phase={phase}
+          text={text}
+          jobId={jobId}
+          results={results}
+          isRunning={loading}
+        />
 
         <TextAnalyzer
           text={text}

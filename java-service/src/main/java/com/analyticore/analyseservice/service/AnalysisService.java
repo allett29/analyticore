@@ -48,28 +48,46 @@ public class AnalysisService {
      */
     @Transactional
     public Job analyzeJob(UUID jobId) {
+        ActivityTracker.onReceived(jobId.toString());
+        pause(400);
+
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
 
-        // Paso 4 del flujo: actualizar a PROCESANDO
+        String preview = job.getText().length() > 60
+                ? job.getText().substring(0, 60) + "..." : job.getText();
+        ActivityTracker.onReadingDb(preview);
+        pause(400);
+
+        ActivityTracker.onProcessing();
         job.setStatus(JobStatus.PROCESANDO);
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
+        pause(400);
 
-        // Análisis de sentimiento simple
+        ActivityTracker.onAnalyzingSentiment();
         SentimentResult sentiment = analyzeSentiment(job.getText());
+        pause(400);
 
-        // Extracción de palabras clave
+        ActivityTracker.onExtractingKeywords();
         List<String> keywords = extractKeywords(job.getText());
+        pause(400);
 
-        // Guardar resultados y marcar COMPLETADO
+        ActivityTracker.onSaving(sentiment.label(), keywords.toString());
         job.setSentiment(sentiment.label());
         job.setScore(sentiment.score());
         job.setKeywords(toJson(keywords));
         job.setStatus(JobStatus.COMPLETADO);
         job.setUpdatedAt(LocalDateTime.now());
+        jobRepository.save(job);
 
-        return jobRepository.save(job);
+        ActivityTracker.onFinished(sentiment.label(), sentiment.score());
+        return job;
+    }
+
+    /** Pausa breve para que el panel / muestre cada paso interno (solo demo). */
+    private void pause(long ms) {
+        try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 
     private SentimentResult analyzeSentiment(String text) {

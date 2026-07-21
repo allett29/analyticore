@@ -2,9 +2,11 @@
 Capa de Aplicación: casos de uso que orquestan el flujo de negocio.
 Conecta la API (presentación) con la BD (infraestructura) y el servicio Java.
 """
+import time
 from uuid import UUID, uuid4
 
 from domain.models import Job, JobStatus
+from infrastructure.activity_tracker import on_calling_java, on_finished, on_saving, on_validating
 from infrastructure.database import JobRepository
 from infrastructure.java_client import JavaAnalysisClient
 
@@ -20,17 +22,20 @@ class SubmitTextUseCase:
         self.java_client = java_client
 
     def execute(self, text: str) -> Job:
-        # 1. Crear job en PostgreSQL con estado PENDIENTE
-        job = Job(
-            id=uuid4(),
-            text=text,
-            status=JobStatus.PENDIENTE,
-        )
+        # Panel / : registra cada paso interno de Python
+        on_validating()
+        time.sleep(0.4)
+
+        job = Job(id=uuid4(), text=text, status=JobStatus.PENDIENTE)
+        on_saving(str(job.id))
         self.repository.save(job)
+        time.sleep(0.4)
 
-        # 2. Llamada síncrona REST al Servicio Java (punto #3 del flujo de datos)
+        on_calling_java(str(job.id))
         self.java_client.trigger_analysis(job.id)
+        time.sleep(0.3)
 
+        on_finished(str(job.id))
         return job
 
 
