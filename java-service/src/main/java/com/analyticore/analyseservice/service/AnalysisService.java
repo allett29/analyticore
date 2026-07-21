@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AnalysisService {
 
+    /** Pausa entre pasos del panel / (solo demo visual, en ms) */
+    private static final long DEMO_STEP_DELAY_MS = 1200;
+
     private final JobRepository jobRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -49,7 +52,7 @@ public class AnalysisService {
     @Transactional
     public Job analyzeJob(UUID jobId) {
         ActivityTracker.onReceived(jobId.toString());
-        pause(400);
+        pause(DEMO_STEP_DELAY_MS);
 
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
@@ -57,21 +60,21 @@ public class AnalysisService {
         String preview = job.getText().length() > 60
                 ? job.getText().substring(0, 60) + "..." : job.getText();
         ActivityTracker.onReadingDb(preview);
-        pause(400);
+        pause(DEMO_STEP_DELAY_MS);
 
         ActivityTracker.onProcessing();
         job.setStatus(JobStatus.PROCESANDO);
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
-        pause(400);
+        pause(DEMO_STEP_DELAY_MS);
 
         ActivityTracker.onAnalyzingSentiment();
         SentimentResult sentiment = analyzeSentiment(job.getText());
-        pause(400);
+        pause(DEMO_STEP_DELAY_MS);
 
         ActivityTracker.onExtractingKeywords();
         List<String> keywords = extractKeywords(job.getText());
-        pause(400);
+        pause(DEMO_STEP_DELAY_MS);
 
         ActivityTracker.onSaving(sentiment.label(), keywords.toString());
         job.setSentiment(sentiment.label());
@@ -80,6 +83,7 @@ public class AnalysisService {
         job.setStatus(JobStatus.COMPLETADO);
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
+        pause(DEMO_STEP_DELAY_MS);
 
         ActivityTracker.onFinished(sentiment.label(), sentiment.score());
         return job;

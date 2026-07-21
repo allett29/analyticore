@@ -2,12 +2,14 @@
 Capa de Presentación: endpoints REST expuestos al Frontend.
 Punto de entrada HTTP del Servicio de Submisión.
 """
+import time
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from application.use_cases import GetJobStatusUseCase, SubmitTextUseCase
+from config import settings
 from infrastructure.activity_tracker import on_received
 from infrastructure.database import JobRepository
 from infrastructure.java_client import JavaAnalysisClient
@@ -42,6 +44,7 @@ def submit_job(request: SubmitTextRequest):
     Flujo: validar → persistir PENDIENTE → llamar Java → devolver jobId al Frontend.
     """
     on_received(request.text)
+    time.sleep(settings.demo_step_delay)
     job = submit_use_case.execute(request.text)
     return JobResponse(jobId=str(job.id), status=job.status.value)
 

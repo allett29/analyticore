@@ -9,6 +9,10 @@ import FrontendMonitor from './components/FrontendMonitor'
 import { submitText, getJobStatus } from './services/api'
 
 const POLL_INTERVAL_MS = 2000
+// Pausa entre fases del panel (solo demo visual, en ms)
+const DEMO_STEP_DELAY_MS = 1200
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export default function App() {
   const [text, setText] = useState('')
@@ -17,7 +21,6 @@ export default function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  // Fase interna del Frontend: 0=espera, 1=preparando, 2=enviando, 3=polling, 4=resultado
   const [phase, setPhase] = useState(0)
 
   const handleSubmit = async (e) => {
@@ -28,17 +31,21 @@ export default function App() {
     setStatus(null)
     setJobId(null)
     setPhase(1)
+    await sleep(DEMO_STEP_DELAY_MS)
 
     try {
       setPhase(2)
+      await sleep(DEMO_STEP_DELAY_MS)
       const response = await submitText(text)
       setJobId(response.jobId)
 
       setPhase(3)
+      await sleep(DEMO_STEP_DELAY_MS)
       const job = await getJobStatus(response.jobId)
       setStatus(job.status)
 
       if (job.status === 'COMPLETADO') {
+        await sleep(DEMO_STEP_DELAY_MS)
         const res = { sentiment: job.sentiment, score: job.score, keywords: job.keywords }
         setResults(res)
         setPhase(4)
@@ -61,6 +68,7 @@ export default function App() {
         setStatus(job.status)
 
         if (job.status === 'COMPLETADO') {
+          await sleep(DEMO_STEP_DELAY_MS)
           const res = { sentiment: job.sentiment, score: job.score, keywords: job.keywords }
           setResults(res)
           setPhase(4)

@@ -6,6 +6,7 @@ import time
 from uuid import UUID, uuid4
 
 from domain.models import Job, JobStatus
+from config import settings
 from infrastructure.activity_tracker import on_calling_java, on_finished, on_saving, on_validating
 from infrastructure.database import JobRepository
 from infrastructure.java_client import JavaAnalysisClient
@@ -22,18 +23,21 @@ class SubmitTextUseCase:
         self.java_client = java_client
 
     def execute(self, text: str) -> Job:
-        # Panel / : registra cada paso interno de Python
+        delay = settings.demo_step_delay
+
+        # Panel / : registra cada paso interno de Python (con pausa para la demo)
         on_validating()
-        time.sleep(0.4)
+        time.sleep(delay)
 
         job = Job(id=uuid4(), text=text, status=JobStatus.PENDIENTE)
         on_saving(str(job.id))
         self.repository.save(job)
-        time.sleep(0.4)
+        time.sleep(delay)
 
         on_calling_java(str(job.id))
+        time.sleep(delay)
         self.java_client.trigger_analysis(job.id)
-        time.sleep(0.3)
+        time.sleep(delay)
 
         on_finished(str(job.id))
         return job

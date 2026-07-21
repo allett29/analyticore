@@ -7,6 +7,8 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql://analyticore:analyticore@localhost:5432/analyticore"
     java_service_url: str = "http://localhost:8080"
+    # Pausa entre pasos del panel / (solo demo visual, en segundos)
+    demo_step_delay: float = 1.2
 
 
 settings = Settings()
