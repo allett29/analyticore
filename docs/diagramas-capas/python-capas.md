@@ -5,13 +5,14 @@ Arquitectura limpia del Servicio de Submisión.
 ```mermaid
 graph TB
     subgraph Presentación
-        ROUTES[api/routes.py<br/>Endpoints REST]
-        MAIN[main.py<br/>App FastAPI + CORS]
+        ROUTES[presentation/routes.py<br/>Endpoints REST]
+        MAIN[presentation/main.py<br/>App FastAPI + CORS]
+        DASH[presentation/dashboard.py<br/>Panel demo]
     end
 
     subgraph Aplicación
-        UC_SUB[SubmitTextUseCase<br/>Crear job + orquestar]
-        UC_GET[GetJobStatusUseCase<br/>Consultar estado]
+        UC_SUB[application/use_cases.py<br/>SubmitTextUseCase]
+        UC_GET[application/use_cases.py<br/>GetJobStatusUseCase]
     end
 
     subgraph Dominio
@@ -21,7 +22,7 @@ graph TB
     subgraph Infraestructura
         DB[infrastructure/database.py<br/>SQLAlchemy + PostgreSQL]
         JAVA[infrastructure/java_client.py<br/>Cliente HTTP → Java]
-        CFG[config.py<br/>Variables de entorno]
+        CFG[infrastructure/config.py<br/>Variables de entorno]
     end
 
     subgraph Externo
@@ -30,6 +31,7 @@ graph TB
     end
 
     MAIN --> ROUTES
+    MAIN --> DASH
     ROUTES --> UC_SUB
     ROUTES --> UC_GET
     UC_SUB --> MODELS
@@ -41,16 +43,18 @@ graph TB
     JAVA -->|REST| JV
     CFG --> DB
     CFG --> JAVA
+    DASH --> DB
 ```
 
 ## Capas y archivos
 
 | Capa | Archivo | Responsabilidad |
 |---|---|---|
-| **Presentación** | `api/routes.py` | `POST /api/jobs`, `GET /api/jobs/{id}` |
-| **Presentación** | `main.py` | Configuración FastAPI, CORS, health |
+| **Presentación** | `presentation/routes.py` | `POST /api/jobs`, `GET /api/jobs/{id}` |
+| **Presentación** | `presentation/main.py` | Configuración FastAPI, CORS, health |
+| **Presentación** | `presentation/dashboard.py` | Panel visual de demo |
 | **Aplicación** | `application/use_cases.py` | Lógica de negocio y orquestación |
 | **Dominio** | `domain/models.py` | Entidad Job y enum JobStatus |
 | **Infraestructura** | `infrastructure/database.py` | Persistencia en PostgreSQL |
 | **Infraestructura** | `infrastructure/java_client.py` | Llamada REST al servicio Java |
-| **Infraestructura** | `config.py` | `DATABASE_URL`, `JAVA_SERVICE_URL` |
+| **Infraestructura** | `infrastructure/config.py` | `DATABASE_URL`, `JAVA_SERVICE_URL` |

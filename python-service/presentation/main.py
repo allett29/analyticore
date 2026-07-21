@@ -4,18 +4,18 @@ Capa de Presentación — Punto de entrada del Servicio de Submisión (Python/Fa
 BUS DE COMUNICACIÓN: REST/HTTP (no hay cola ni mensajería; cada servicio expone APIs).
 
 Conexiones de este servicio:
-  ENTRADA  → Frontend (React)  : POST/GET /api/jobs        (línea 39, api/routes.py)
-  SALIDA   → Java (Spring Boot) : POST /api/analyze/{jobId} (línea 27, infrastructure/java_client.py)
-  SALIDA   → PostgreSQL (Render): SQL vía SQLAlchemy       (línea 32, infrastructure/database.py)
+  ENTRADA  → Frontend (React)  : POST/GET /api/jobs        (presentation/routes.py)
+  SALIDA   → Java (Spring Boot) : POST /api/analyze/{jobId} (infrastructure/java_client.py)
+  SALIDA   → PostgreSQL (Render): SQL vía SQLAlchemy       (infrastructure/database.py)
 """
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import router
-from api.dashboard import router as dashboard_router
 from infrastructure.database import init_db
+from presentation.dashboard import router as dashboard_router
+from presentation.routes import router
 
 
 @asynccontextmanager
@@ -43,7 +43,7 @@ app.add_middleware(
 
 # Monta el bus REST hacia el Frontend bajo el prefijo /api
 app.include_router(router, prefix="/api")
-# Panel visual de demo (no participa en el flujo de negocio)
+# Panel de monitoreo (lee estado desde PostgreSQL — stateless)
 app.include_router(dashboard_router)
 
 

@@ -1,6 +1,6 @@
-package com.analyticore.analyseservice.controller;
+package com.analyticore.analyseservice.presentation;
 
-import com.analyticore.analyseservice.service.DashboardService;
+import com.analyticore.analyseservice.application.DashboardService;
 import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -8,8 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Panel de monitoreo INTERNO del Servicio Java.
- * Muestra únicamente lo que hace Java — no el flujo de otros servicios.
+ * Panel de monitoreo INTERNO del Servicio Java (capa Presentación).
  */
 @RestController
 public class DashboardController {
@@ -69,7 +68,7 @@ h1{font-size:1.4rem;margin-top:.5rem;color:#f1f5f9}
 <div class="hdr">
   <div class="badge">☕ SERVICIO JAVA</div>
   <h1>Servicio de Análisis</h1>
-  <p class="sub">Spring Boot · Analiza y persiste resultados</p>
+  <p class="sub">Spring Boot · Estado leído desde PostgreSQL (stateless)</p>
 </div>
 <div class="live" id="live">
   <div class="live-lbl">Proceso actual</div>
@@ -77,7 +76,7 @@ h1{font-size:1.4rem;margin-top:.5rem;color:#f1f5f9}
   <div class="live-detail" id="detail"></div>
 </div>
 <div id="steps"></div>
-<p class="foot">Solo procesos internos de Java · actualiza cada 500ms</p>
+<p class="foot">Actualiza cada 2s desde PostgreSQL</p>
 <script>
 async function poll(){
   try{
@@ -94,7 +93,7 @@ async function poll(){
       </div>`).join('');
   }catch(e){document.getElementById('msg').textContent='Error de conexión';}
 }
-poll();setInterval(poll,500);
+poll();setInterval(poll,2000);
 </script>
 </body>
 </html>""";

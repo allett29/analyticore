@@ -1,11 +1,5 @@
 /**
  * Capa de Presentación — Formulario de entrada de texto.
- *
- * Comunicación:
- *   Usuario → este componente (escribe texto en el textarea)
- *   Este componente → App.jsx handleSubmit() (dispara el bus REST hacia Python)
- *
- * No hace llamadas HTTP directas — delega a App.jsx → services/api.js
  */
 export default function TextAnalyzer({ text, onTextChange, onSubmit, loading }) {
   return (

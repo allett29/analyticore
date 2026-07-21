@@ -1,11 +1,9 @@
 /**
- * Panel de monitoreo INTERNO del Frontend (React).
- * Muestra únicamente lo que hace el Frontend — no los otros servicios.
+ * Panel de monitoreo INTERNO del Frontend (capa Presentación).
  */
 const PYTHON_URL = import.meta.env.VITE_PYTHON_URL || 'http://localhost:8000'
 const JAVA_URL = import.meta.env.VITE_JAVA_URL || 'http://localhost:8080'
 
-// Pasos INTERNOS que ejecuta solo el Frontend
 const STEPS = [
   { label: 'Esperando que el usuario escriba un texto' },
   { label: 'Usuario envió el texto — preparando solicitud' },
@@ -40,7 +38,6 @@ export default function FrontendMonitor({
         <p>Interfaz de usuario · envía textos y muestra resultados</p>
       </div>
 
-      {/* Mensaje en vivo del proceso actual */}
       <div className={`monitor-live ${isRunning ? 'monitor-live--active' : ''}`}>
         <span className="monitor-live-label">Proceso actual</span>
         <p className={`monitor-live-msg ${isRunning ? 'monitor-live-msg--pulse' : ''}`}>
@@ -51,7 +48,6 @@ export default function FrontendMonitor({
         )}
       </div>
 
-      {/* Lista de pasos internos del Frontend */}
       <div className="monitor-steps">
         {STEPS.map((step, idx) => {
           let state = 'pending'

@@ -5,18 +5,12 @@
  * URL base: variable VITE_API_URL (configurada en Render al hacer build del Docker)
  *
  * Este archivo es el ÚNICO punto del Frontend que se comunica con el backend.
- * No hay comunicación directa Frontend → Java ni Frontend → PostgreSQL.
  */
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 /**
- * BUS REST → Python (api/routes.py línea 40):
- *   Método : POST
- *   Ruta   : {VITE_API_URL}/api/jobs
- *   Body   : { "text": "..." }
- *   Respuesta: { jobId, status }
- *
- * Llamado desde: App.jsx línea 39 (handleSubmit)
+ * BUS REST → Python (presentation/routes.py):
+ *   POST {VITE_API_URL}/api/jobs  body: { "text": "..." }
  */
 export async function submitText(text) {
   const response = await fetch(`${API_BASE_URL}/api/jobs`, {
@@ -34,13 +28,8 @@ export async function submitText(text) {
 }
 
 /**
- * BUS REST → Python (api/routes.py línea 52):
- *   Método : GET
- *   Ruta   : {VITE_API_URL}/api/jobs/{jobId}
- *   Respuesta: { jobId, status, sentiment, score, keywords }
- *
- * Llamado desde: App.jsx línea 44 y línea 67 (polling cada 2s)
- * Python lee de PostgreSQL y devuelve el estado actualizado por Java.
+ * BUS REST → Python (presentation/routes.py):
+ *   GET {VITE_API_URL}/api/jobs/{jobId}
  */
 export async function getJobStatus(jobId) {
   const response = await fetch(`${API_BASE_URL}/api/jobs/${jobId}`)

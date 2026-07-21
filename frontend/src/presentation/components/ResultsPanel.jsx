@@ -1,11 +1,5 @@
 /**
  * Capa de Presentación — Visualización de resultados del análisis.
- *
- * Comunicación:
- *   Recibe datos de App.jsx (que los obtuvo vía polling de Python → api.js getJobStatus)
- *   Origen de los datos: PostgreSQL tabla 'jobs' (escritos por Java, leídos por Python)
- *
- * No hace llamadas HTTP — solo renderiza el estado que recibe como prop.
  */
 export default function ResultsPanel({ results, loading }) {
   if (loading) {

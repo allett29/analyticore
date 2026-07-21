@@ -10,7 +10,7 @@ Invocado desde: application/use_cases.py línea 39 (SubmitTextUseCase.execute)
 """
 import httpx
 
-from config import settings
+from infrastructure.config import settings
 from uuid import UUID
 
 

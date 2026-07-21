@@ -16,7 +16,7 @@ from sqlalchemy import Column, DateTime, Float, String, Text, create_engine
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-from config import settings
+from infrastructure.config import settings
 from domain.models import Job, JobStatus
 
 Base = declarative_base()
@@ -73,7 +73,7 @@ class JobRepository:
             return self._to_domain(orm_job)
 
     def find_latest(self) -> Job | None:
-        """Solo para panel visual de demo (api/dashboard.py) — no es flujo de negocio."""
+        """Solo para panel de monitoreo — lee desde PostgreSQL (stateless)."""
         with Session(engine) as session:
             orm_job = (
                 session.query(JobORM)

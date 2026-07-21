@@ -1,4 +1,4 @@
-package com.analyticore.analyseservice.config;
+package com.analyticore.analyseservice.infrastructure.config;
 
 import com.zaxxer.hikari.HikariDataSource;
 import java.net.URI;
@@ -14,8 +14,7 @@ import org.springframework.context.annotation.Primary;
  * Capa de Infraestructura — Configuración del bus PostgreSQL.
  *
  * Variable externa Render: DATABASE_URL
- * Usado por: repository/JobRepository.java (Spring Data JPA → JDBC)
- * Tabla compartida con Python: 'jobs' (database/schema.sql)
+ * Usado por: infrastructure/persistence/JobRepository.java (Spring Data JPA → JDBC)
  */
 @Configuration
 public class DatabaseConfig {

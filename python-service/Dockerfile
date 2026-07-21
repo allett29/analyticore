@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8000
 
 # Servidor ASGI de producción
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "presentation.main:app", "--host", "0.0.0.0", "--port", "8000"]

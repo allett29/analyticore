@@ -5,22 +5,25 @@ Arquitectura limpia del Servicio de Análisis (Worker).
 ```mermaid
 graph TB
     subgraph Presentación
-        CTRL[controller/AnalysisController<br/>POST /api/analyze/{jobId}]
+        CTRL[presentation/AnalysisController<br/>POST /api/analyze/{jobId}]
+        DASH[presentation/DashboardController<br/>Panel demo]
     end
 
     subgraph Aplicación
-        SVC[service/AnalysisService<br/>Análisis sentimiento + keywords]
+        SVC[application/AnalysisService<br/>Análisis sentimiento + keywords]
+        DSVC[application/DashboardService<br/>Estado panel demo]
     end
 
     subgraph Dominio
-        JOB[domain/Job.java<br/>Entidad de negocio]
+        JOB[domain/Job.java<br/>Entidad pura]
         STATUS[domain/JobStatus.java<br/>PENDIENTE/PROCESANDO/COMPLETADO]
     end
 
     subgraph Infraestructura
-        REPO[repository/JobRepository<br/>Spring Data JPA]
-        DBCFG[config/DatabaseConfig<br/>Conexión PostgreSQL externa]
-        PROPS[application.properties<br/>Configuración Render]
+        ENTITY[infrastructure/persistence/JobEntity.java<br/>Mapeo JPA]
+        REPO[infrastructure/persistence/JobRepository.java<br/>Adaptador PostgreSQL]
+        MAPPER[infrastructure/persistence/JobMapper.java<br/>Dominio ↔ JPA]
+        DBCFG[infrastructure/config/DatabaseConfig<br/>Conexión PostgreSQL]
     end
 
     subgraph Externo
@@ -30,22 +33,26 @@ graph TB
 
     PY -->|REST POST| CTRL
     CTRL --> SVC
+    DASH --> DSVC
+    DSVC --> REPO
     SVC --> JOB
     SVC --> STATUS
     SVC --> REPO
-    REPO --> PG
+    REPO --> MAPPER
+    REPO --> ENTITY
+    ENTITY --> PG
     DBCFG --> REPO
-    PROPS --> DBCFG
 ```
 
 ## Capas y archivos
 
 | Capa | Archivo | Responsabilidad |
 |---|---|---|
-| **Presentación** | `controller/AnalysisController.java` | Endpoint REST interno |
-| **Aplicación** | `service/AnalysisService.java` | Análisis de sentimiento y keywords |
-| **Dominio** | `domain/Job.java` | Entidad Job |
+| **Presentación** | `presentation/AnalysisController.java` | Endpoint REST interno |
+| **Presentación** | `presentation/DashboardController.java` | Panel visual de demo |
+| **Aplicación** | `application/AnalysisService.java` | Análisis de sentimiento y keywords |
+| **Dominio** | `domain/Job.java` | Entidad de dominio (sin JPA) |
 | **Dominio** | `domain/JobStatus.java` | Estados del ciclo de vida |
-| **Infraestructura** | `repository/JobRepository.java` | Acceso a PostgreSQL vía JPA |
-| **Infraestructura** | `config/DatabaseConfig.java` | Configuración externa de BD |
-| **Infraestructura** | `application.properties` | Variables de entorno Render |
+| **Infraestructura** | `infrastructure/persistence/JobEntity.java` | Entidad JPA |
+| **Infraestructura** | `infrastructure/persistence/JobRepository.java` | Acceso a PostgreSQL |
+| **Infraestructura** | `infrastructure/config/DatabaseConfig.java` | Configuración externa de BD |

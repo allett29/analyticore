@@ -1,8 +1,8 @@
-package com.analyticore.analyseservice.service;
+package com.analyticore.analyseservice.application;
 
 import com.analyticore.analyseservice.domain.Job;
 import com.analyticore.analyseservice.domain.JobStatus;
-import com.analyticore.analyseservice.repository.JobRepository;
+import com.analyticore.analyseservice.infrastructure.persistence.JobRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
@@ -12,18 +12,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Capa de Aplicación — Lógica de análisis de sentimiento y extracción de keywords.
+ * Capa de Aplicación — Inicia el análisis (síncrono) y lo completa (asíncrono).
  *
- * Comunicaciones de este servicio:
- *   ENTRADA  ← controller/AnalysisController.java línea 30 (POST /api/analyze/{jobId})
- *   SALIDA   → repository/JobRepository.java (bus JDBC/JPA → PostgreSQL tabla 'jobs')
- *
- * El estado de negocio NO se guarda en memoria — solo en PostgreSQL (patrón stateless).
+ * Flujo:
+ *   startAnalysis()  → REST síncrono desde Python: marca PROCESANDO y responde
+ *   completeAnalysis() → worker asíncrono: analiza y marca COMPLETADO en PostgreSQL
  */
 @Service
 public class AnalysisService {
-
-    private static final long DEMO_STEP_DELAY_MS = 1200;
 
     private final JobRepository jobRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -46,60 +42,34 @@ public class AnalysisService {
         this.jobRepository = jobRepository;
     }
 
-    /**
-     * Procesa un job completo: PROCESANDO → análisis → COMPLETADO.
-     *
-     * Secuencia de comunicación con PostgreSQL:
-     *   línea 57 → SELECT (leer texto del job creado por Python)
-     *   línea 68 → UPDATE status='PROCESANDO'
-     *   línea 85 → UPDATE status='COMPLETADO' + sentiment + score + keywords
-     */
     @Transactional
-    public Job analyzeJob(UUID jobId) {
-        ActivityTracker.onReceived(jobId.toString());
-        pause(DEMO_STEP_DELAY_MS);
-
-        // BUS → PostgreSQL: SELECT * FROM jobs WHERE id = {jobId}
+    public Job startAnalysis(UUID jobId) {
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
 
-        String preview = job.getText().length() > 60
-                ? job.getText().substring(0, 60) + "..." : job.getText();
-        ActivityTracker.onReadingDb(preview);
-        pause(DEMO_STEP_DELAY_MS);
+        if (job.getStatus() != JobStatus.PENDIENTE) {
+            throw new IllegalStateException("El job no está en estado PENDIENTE: " + job.getStatus());
+        }
 
-        // BUS → PostgreSQL: UPDATE jobs SET status='PROCESANDO'
-        ActivityTracker.onProcessing();
         job.setStatus(JobStatus.PROCESANDO);
         job.setUpdatedAt(LocalDateTime.now());
-        jobRepository.save(job);
-        pause(DEMO_STEP_DELAY_MS);
+        return jobRepository.save(job);
+    }
 
-        // Lógica de dominio (sin I/O): análisis en memoria, resultado se persiste abajo
-        ActivityTracker.onAnalyzingSentiment();
+    @Transactional
+    public void completeAnalysis(UUID jobId) {
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() -> new IllegalArgumentException("Job no encontrado: " + jobId));
+
         SentimentResult sentiment = analyzeSentiment(job.getText());
-        pause(DEMO_STEP_DELAY_MS);
-
-        ActivityTracker.onExtractingKeywords();
         List<String> keywords = extractKeywords(job.getText());
-        pause(DEMO_STEP_DELAY_MS);
 
-        // BUS → PostgreSQL: UPDATE jobs SET status='COMPLETADO', sentiment, score, keywords
-        ActivityTracker.onSaving(sentiment.label(), keywords.toString());
         job.setSentiment(sentiment.label());
         job.setScore(sentiment.score());
         job.setKeywords(toJson(keywords));
         job.setStatus(JobStatus.COMPLETADO);
         job.setUpdatedAt(LocalDateTime.now());
         jobRepository.save(job);
-        pause(DEMO_STEP_DELAY_MS);
-
-        ActivityTracker.onFinished(sentiment.label(), sentiment.score());
-        return job;
-    }
-
-    private void pause(long ms) {
-        try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }
 
     private SentimentResult analyzeSentiment(String text) {
