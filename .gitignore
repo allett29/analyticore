@@ -24,3 +24,7 @@ Thumbs.db
 # Env
 .env
 .env.local
+
+# Entregables Arquitectura
+EXAMEN/
+REFERENCIA/
