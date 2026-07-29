@@ -1,0 +1,56 @@
+name: CI/CD Python Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'python-service/**'
+      - '.github/workflows/ci-cd-python.yml'
+
+jobs:
+  build-test-scan-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          cd python-service
+          pip install -r requirements.txt
+
+      - name: Run Unit Tests
+        run: |
+          cd python-service
+          pytest
+
+      - name: Build Docker Image
+        run: |
+          cd python-service
+          docker build -t mi-usuario-docker/analyticore-python:latest .
+
+      - name: Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mi-usuario-docker/analyticore-python:latest'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Log in to Docker Hub
+        run: echo "Login to Docker Hub (Comentado hasta configurar secretos)"
+
+      - name: Push Image to Registry
+        run: echo "Push image to Docker Hub (Comentado hasta configurar secretos)"
+
+      - name: Trigger Render Deployment (Staging / Prod)
+        run: echo "Trigger Webhook Render (Comentado hasta tener la URL)"

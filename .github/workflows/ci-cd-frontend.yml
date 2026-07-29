@@ -1,0 +1,56 @@
+name: CI/CD Frontend React
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/ci-cd-frontend.yml'
+
+jobs:
+  build-test-scan-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Run Unit Tests
+        run: |
+          cd frontend
+          npm test
+
+      - name: Build Docker Image
+        run: |
+          cd frontend
+          docker build -t mi-usuario-docker/analyticore-frontend:latest .
+
+      - name: Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'mi-usuario-docker/analyticore-frontend:latest'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Log in to Docker Hub
+        run: echo "Login to Docker Hub (Comentado hasta configurar secretos)"
+
+      - name: Push Image to Registry
+        run: echo "Push image to Docker Hub (Comentado hasta configurar secretos)"
+
+      - name: Trigger Render Deployment (Staging / Prod)
+        run: echo "Trigger Webhook Render (Comentado hasta tener la URL)"
