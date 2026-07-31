@@ -91,7 +91,8 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1>AnalytiCore</h1>
+                <h1>AnalytiCore - Examen Final</h1>
+
         <p>Análisis de sentimiento y palabras clave</p>
       </header>
 
