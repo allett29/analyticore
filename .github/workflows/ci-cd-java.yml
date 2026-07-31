@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'feature/**'
     paths:
       - 'java-service/**'
       - '.github/workflows/ci-cd-java.yml'
