@@ -93,7 +93,7 @@ export default function App() {
       <header className="header">
                 <h1>AnalytiCore - Examen Final</h1>
 
-        <p>Análisis de sentimiento y palabras clave</p>
+        <p>Análisis </p>
       </header>
 
       <main className="main">
