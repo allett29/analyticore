@@ -14,8 +14,6 @@ import { pythonJobGateway } from '../infrastructure/http/pythonJobGateway'
 import FrontendMonitor from './components/FrontendMonitor'
 import ResultsPanel from './components/ResultsPanel'
 import TextAnalyzer from './components/TextAnalyzer'
-import { Activity } from 'react'
-
 
 function statusToPhase(status, loading) {
   if (!loading && !status) return 0
